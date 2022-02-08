@@ -5,15 +5,12 @@ const path = require('path');
 const phin = require('phin');
 
 const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
-const COMPAREPKG = process.env.COMPAREPKG || path.join(__dirname, 'comparepkg.txt');
-const PREVIOUS = process.env.PREVIOUS || '/usr/volume/previous.json';
-const URL = process.env.URL || 'http://localhost:8080/artix';
 
-console.log(`URL = '${URL}'`); //TODO: remove
+let url;
 
 function notify(packarr) {
     return phin({
-        url: URL,
+        url,
         method: 'POST',
         headers: {
             'token': process.env.TOKEN || 'fucksystemd'
@@ -25,11 +22,17 @@ function notify(packarr) {
 }
 
 fs.readFile(PKGCONFIG, async (err, data) => {
+
+
     if (err) {
         console.log(err);
     }
     else {
-        const packages = JSON.parse(data).packages;
+        data = JSON.parse(data);
+        const COMPAREPKG = data.COMPAREPKG || path.join(__dirname, 'comparepkg.txt');
+        const PREVIOUS = data.PREVIOUS || '/usr/volume/previous.json';
+        const packages = data.packages;
+        url = data.URL || 'http://localhost:8080/artix';
         let ss_s, ss_e, previous = [], movable = [];
         try {
             const p = JSON.parse(await fsp.readFile(PREVIOUS));
@@ -59,7 +62,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         });
         rl.on('close', async () => {
             let newpack = [];
-            await fsp.writeFile(PREVIOUS, JSON.stringify({packages: movable}));
+            await fsp.writeFile(PREVIOUS, JSON.stringify({ packages: movable }));
             movable.forEach(package => {
                 if (previous.indexOf(package) === -1) {
                     newpack.push(package);
