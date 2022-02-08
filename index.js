@@ -7,10 +7,13 @@ const phin = require('phin');
 const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
 const COMPAREPKG = process.env.COMPAREPKG || path.join(__dirname, 'comparepkg.txt');
 const PREVIOUS = process.env.PREVIOUS || '/usr/volume/previous.json';
+const URL = process.env.URL || 'http://localhost:8080/artix';
+
+console.log(`URL = '${URL}'`); //TODO: remove
 
 function notify(packarr) {
     return phin({
-        url: process.env.URL || 'http://localhost:8080/artix',
+        url: URL,
         method: 'POST',
         headers: {
             'token': process.env.TOKEN || 'fucksystemd'
