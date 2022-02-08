@@ -1,0 +1,26 @@
+{
+  "name": "artix-packy-notifier",
+  "version": "1.0.0",
+  "description": "Determine packages that need attention",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/CorySanin/artix-packy-notifier.git"
+  },
+  "keywords": [
+    "artix",
+    "linux"
+  ],
+  "author": "Cory Sanin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/CorySanin/artix-packy-notifier/issues"
+  },
+  "homepage": "https://gitlab.com/CorySanin/artix-packy-notifier#readme",
+  "dependencies": {
+    "phin": "^3.6.1"
+  }
+}
