@@ -12,11 +12,8 @@ function notify(packarr) {
     return phin({
         url,
         method: 'POST',
-        headers: {
-            'token': process.env.TOKEN || 'fucksystemd'
-        },
         data: {
-            packages: packarr.join(', ')
+            packages: packarr.join('<br/>')
         }
     });
 }
@@ -62,7 +59,12 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         });
         rl.on('close', async () => {
             let newpack = [];
-            await fsp.writeFile(PREVIOUS, JSON.stringify({ packages: movable }));
+            try {
+                await fsp.writeFile(PREVIOUS, JSON.stringify({ packages: movable }));
+            }
+            catch (ex) {
+                console.log(`Could not write ${PREVIOUS}: ${ex}`);
+            }
             movable.forEach(package => {
                 if (previous.indexOf(package) === -1) {
                     newpack.push(package);

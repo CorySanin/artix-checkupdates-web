@@ -12,8 +12,7 @@
                 "<node_internals>/**"
             ],
             "env": {
-                "PKGCONFIG": "volume/packages.json",
-                "PREVIOUS": "volume/previous.json"
+                "PKGCONFIG": "volume/packages.json"
             },
             "program": "${workspaceFolder}/index.js"
         }
