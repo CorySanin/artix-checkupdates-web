@@ -2,7 +2,7 @@ FROM artixlinux/openrc:latest
 
 WORKDIR /usr/files
 
-RUN pacman -Sy --noconfirm artools-pkg nodejs cronie-openrc openssh curl &&\
+RUN pacman -Sy --noconfirm artools-pkg nodejs npm cronie-openrc openssh icu &&\
   mkdir -p /root/.config/artools && \
   ln -sf /usr/files/cron /etc/cron.d/cron && \
   ln -sf /usr/volume/ssh /root/.ssh && \
