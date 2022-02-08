@@ -13,9 +13,10 @@ RUN pacman -Sy --noconfirm artools-pkg nodejs npm cronie-openrc openssh icu &&\
 COPY . .
 
 RUN chmod 0644 ./* && \
+  chmod +x ./*.sh && \
   npm install && \
   crontab /etc/cron.d/cron
 
 #WORKDIR /usr/volume
 
-CMD mkdir -p /usr/volume/packages /usr/volume/artools /usr/volume/ssh && buildtree -s; crond -n
+CMD ./startup.sh
