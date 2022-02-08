@@ -4,5 +4,5 @@ cd /usr/files
 buildtree -s
 comparepkg -u > comparepkg.txt
 cat comparepkg.txt
-cp comparepkg.txt /usr/volume
+node index.js
 echo "job finished."
