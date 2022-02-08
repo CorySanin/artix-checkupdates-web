@@ -68,7 +68,9 @@ fs.readFile(PKGCONFIG, async (err, data) => {
                     newpack.push(package);
                 }
             });
-            await notify(newpack);
+            if (newpack.length > 0) {
+                await notify(newpack);
+            }
         });
     }
 });
