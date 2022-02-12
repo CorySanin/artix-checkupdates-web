@@ -5,6 +5,7 @@ const path = require('path');
 const phin = require('phin');
 
 const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
+const EXTRASPACE = new RegExp('\\s+', 'g');
 
 let url;
 
@@ -30,7 +31,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         const PREVIOUS = data.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
         url = data.URL || 'http://localhost:8080/artix';
-        let ss_s, ss_e, previous = [], movable = [];
+        let previous = [], movable = [];
         try {
             const p = JSON.parse(await fsp.readFile(PREVIOUS));
             if ('packages' in p) {
@@ -46,12 +47,10 @@ fs.readFile(PKGCONFIG, async (err, data) => {
             terminal: false
         });
         rl.on('line', line => {
-            if (!ss_e) {
-                ss_s = line.indexOf('Package');
-                ss_e = line.indexOf('Arch version');
-            }
-            else {
-                const l = line.substring(ss_s, ss_e).trim();
+            line = line.trim().replace(EXTRASPACE, ' ').split(' ', 3);
+            if(line[0] !== 'Arch'){
+                const l = line[2];
+                console.log(l);
                 if (packages.indexOf(l) >= 0) {
                     movable.push(l);
                 }
