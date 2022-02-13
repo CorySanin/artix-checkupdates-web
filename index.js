@@ -31,7 +31,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         const PREVIOUS = data.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
         url = data.URL || 'http://localhost:8080/artix';
-        let previous = [], movable = [];
+        let linestart = -1, previous = [], movable = [];
         try {
             const p = JSON.parse(await fsp.readFile(PREVIOUS));
             if ('packages' in p) {
@@ -47,12 +47,17 @@ fs.readFile(PKGCONFIG, async (err, data) => {
             terminal: false
         });
         rl.on('line', line => {
-            line = line.trim().replace(EXTRASPACE, ' ').split(' ', 3);
-            if(line[0] !== 'Arch'){
-                const l = line[2];
-                console.log(l);
-                if (packages.indexOf(l) >= 0) {
-                    movable.push(l);
+            if (linestart === -1) {
+                linestart = line.indexOf('Arch Repo');
+            }
+            else {
+                line = line.substring(linestart).trim().replace(EXTRASPACE, ' ').split(' ', 3);
+                if (line[0] !== 'Arch') {
+                    const l = line[2];
+                    console.log(l);
+                    if (packages.indexOf(l) >= 0) {
+                        movable.push(l);
+                    }
                 }
             }
         });
