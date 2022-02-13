@@ -54,7 +54,6 @@ fs.readFile(PKGCONFIG, async (err, data) => {
                 line = line.substring(linestart).trim().replace(EXTRASPACE, ' ').split(' ', 3);
                 if (line[0] !== 'Arch') {
                     const l = line[2];
-                    console.log(l);
                     if (packages.indexOf(l) >= 0) {
                         movable.push(l);
                     }
