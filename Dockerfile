@@ -8,7 +8,8 @@ RUN pacman -Sy --noconfirm artools-pkg nodejs npm cronie-openrc openssh icu &&\
   ln -sf /usr/volume/ssh /root/.ssh && \
   rm -rf /root/.config/artools && \
   ln -sf /usr/volume/artools /root/.config/artools && \
-  ln -sf /usr/volume/packages /root/artools-workspace
+  ln -sf /usr/volume/packages /root/artools-workspace && \
+  echo 'GPGKEY="0"' > /root/.makepkg.conf
 
 COPY . .
 
