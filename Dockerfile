@@ -1,10 +1,10 @@
-FROM artixlinux/openrc:latest
+FROM artixlinux/base:latest
 
 WORKDIR /usr/files
 
-RUN pacman -Sy --noconfirm artools-pkg nodejs npm cronie-openrc openssh icu &&\
+RUN pacman -Sy --noconfirm artools-pkg nodejs npm cronie-openrc openssh icu glibc &&\
   mkdir -p /root/.config/artools && \
-  ln -sf /usr/files/cron /etc/cron.d/cron && \
+  ln -sf /usr/files/.cron /etc/cron.d/.cron && \
   ln -sf /usr/volume/ssh /root/.ssh && \
   rm -rf /root/.config/artools && \
   ln -sf /usr/volume/artools /root/.config/artools && \
@@ -15,9 +15,10 @@ COPY . .
 
 RUN chmod 0644 ./* && \
   chmod +x ./*.sh && \
-  npm install && \
-  crontab /etc/cron.d/cron
+  npm install
 
 #WORKDIR /usr/volume
+
+ENV CRON="*/30 * * * *"
 
 CMD ./startup.sh

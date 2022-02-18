@@ -6,3 +6,5 @@ services:
          context: ./
       volumes:
          - ./volume:/usr/volume
+      environment:
+         CRON: "*/30 * * * *"
