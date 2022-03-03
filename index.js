@@ -66,7 +66,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
                 previousu = p.packages;
             }
             if ('movable' in p) {
-                previousb = p.movable;
+                previousm = p.movable;
             }
         }
         catch (ex) {
