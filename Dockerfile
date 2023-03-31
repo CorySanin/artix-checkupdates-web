@@ -2,8 +2,7 @@ FROM artixlinux/base:latest
 
 WORKDIR /usr/files
 
-RUN sed -i 's:\[system]:[gremlins]\nInclude = /etc/pacman.d/mirrorlist\n\n[system]:' /etc/pacman.conf &&\
-  pacman -Sy --noconfirm artools-pkg git nodejs npm cronie-openrc openssh icu glibc &&\
+RUN pacman -Sy --noconfirm artools-pkg git nodejs npm cronie-openrc openssh icu glibc openssl &&\
   mkdir -p /root/.config/artools && \
   ln -sf /usr/files/.cron /etc/cron.d/.cron && \
   ln -sf /usr/volume/ssh /root/.ssh && \

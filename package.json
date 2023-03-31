@@ -1,6 +1,6 @@
 {
   "name": "artix-packy-notifier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Determine packages that need attention",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,6 @@
   },
   "homepage": "https://gitlab.com/CorySanin/artix-packy-notifier#readme",
   "dependencies": {
-    "phin": "^3.6.1"
+    "phin": "^3.7.0"
   }
 }
