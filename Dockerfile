@@ -2,7 +2,7 @@ FROM artixlinux/base:latest
 
 WORKDIR /usr/files
 
-RUN pacman -Sy --noconfirm artools-pkg git nodejs npm cronie-openrc openssh icu glibc openssl &&\
+RUN pacman -Sy --noconfirm artools-pkg git nodejs npm cronie-openrc openssh icu glibc openssl openssl-1.1 &&\
   mkdir -p /root/.config/artools && \
   ln -sf /usr/files/.cron /etc/cron.d/.cron && \
   ln -sf /usr/volume/ssh /root/.ssh && \
