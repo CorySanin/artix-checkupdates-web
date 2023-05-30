@@ -48,14 +48,49 @@ function parseComparepkg(file, condition) {
     });
 }
 
+function parseCheckupdates(file, condition) {
+    return new Promise((res, reject) => {
+        let modeIndex = 0;
+        let modes = ['upgradable', 'movable'];
+        let out = {
+            upgradable: [],
+            movable: []
+        };
+        let linestart = 0;
+        const rl = readline.createInterface({
+            input: fs.createReadStream(file),
+            output: process.stdout,
+            terminal: false
+        });
+        rl.on('line', line => {
+            if (linestart === -1) {
+                linestart = line.indexOf('Package basename');
+            }
+            else {
+                line = line.substring(linestart).trim().replace(EXTRASPACE, ' ').split(' ', 2);
+                if (line.length === 1 && line[0] === '') {
+                    modeIndex++;
+                }
+                if (line[0] !== 'Package') {
+                    if (condition(line)) {
+                        out[modes[modeIndex]].push(line[0]);
+                    }
+                }
+            }
+        });
+        rl.on('close', async () => {
+            res(out);
+        });
+    });
+}
+
 fs.readFile(PKGCONFIG, async (err, data) => {
     if (err) {
         console.log(err);
     }
     else {
         data = JSON.parse(data);
-        const COMPAREPKG = data.COMPAREPKG || path.join(__dirname, 'comparepkg.txt');
-        const MOVABLE = data.MOVABLE || path.join(__dirname, 'movable.txt');
+        const CHECKUPDATES = data.CHECKUPDATES || path.join(__dirname, 'checkupdates.txt');
         const PREVIOUS = data.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
         url = data.URL || 'http://localhost:8080/artix';
@@ -73,8 +108,10 @@ fs.readFile(PKGCONFIG, async (err, data) => {
             console.log(`Could not read ${PREVIOUS}: ${ex}`);
         }
 
-        movable = await parseComparepkg(MOVABLE, line => line[0] !== line[1] && packages.indexOf(line[2]) >= 0);
-        upgradable = await parseComparepkg(COMPAREPKG, line => packages.indexOf(line[2]) >= 0);
+        let actionable = await parseCheckupdates(CHECKUPDATES, line => packages.indexOf(line[0]) >= 0);
+
+        movable = actionable.movable;
+        upgradable = actionable.upgradable;
 
         try {
             await fsp.writeFile(PREVIOUS, JSON.stringify({
