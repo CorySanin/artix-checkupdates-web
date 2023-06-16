@@ -1,9 +1,9 @@
 const fs = require('fs');
 const fsp = fs.promises;
-const readline = require('readline');
-const path = require('path');
+const spawn = require('child_process').spawn;
 const phin = require('phin');
 
+const TIMEOUT = 180000;
 const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
 const EXTRASPACE = new RegExp('\\s+', 'g');
 
@@ -20,68 +20,46 @@ function notify(packarr, type) {
     });
 }
 
-function parseComparepkg(file, condition) {
-    return new Promise((res, reject) => {
-        let outarr = [];
-        let linestart = -1
-        const rl = readline.createInterface({
-            input: fs.createReadStream(file),
-            output: process.stdout,
-            terminal: false
+function parseCheckUpdatesOutput(output, condition) {
+    let packages = [];
+    let lines = output.split('\n');
+    lines.forEach(l => {
+        let package = l.trim().replace(EXTRASPACE, ' ').split(' ', 2)[0];
+        if (condition(package)) {
+            packages.push(package);
+        }
+    });
+    return packages;
+}
+
+function checkUpdates(flag, condition) {
+    return new Promise((resolve, reject) => {
+        let process = spawn('artix-checkupdates', [flag]);
+        let timeout = setTimeout(() => {
+            reject('Timed out');
+            process.kill();
+        }, TIMEOUT);
+        let packagelist = [];
+        process.stdout.on('data', data => {
+            packagelist = packagelist.concat(parseCheckUpdatesOutput(data.toString(), condition));
         });
-        rl.on('line', line => {
-            if (linestart === -1) {
-                linestart = line.indexOf('Arch Repo');
+        process.on('exit', async (code) => {
+            if (code === 0) {
+                clearTimeout(timeout);
+                resolve(packagelist);
             }
             else {
-                line = line.substring(linestart).trim().replace(EXTRASPACE, ' ').split(' ', 3);
-                if (line[0] !== 'Arch') {
-                    if (condition(line)) {
-                        outarr.push(line[2]);
-                    }
-                }
+                reject(code);
             }
-        });
-        rl.on('close', async () => {
-            res(outarr);
         });
     });
 }
 
-function parseCheckupdates(file, condition) {
-    return new Promise((res, reject) => {
-        let modeIndex = 0;
-        let modes = ['upgradable', 'movable'];
-        let out = {
-            upgradable: [],
-            movable: []
-        };
-        let linestart = 0;
-        const rl = readline.createInterface({
-            input: fs.createReadStream(file),
-            output: process.stdout,
-            terminal: false
-        });
-        rl.on('line', line => {
-            if (linestart === -1) {
-                linestart = line.indexOf('Package basename');
-            }
-            else {
-                line = line.substring(linestart).trim().replace(EXTRASPACE, ' ').split(' ', 2);
-                if (line.length === 1 && line[0] === '') {
-                    modeIndex++;
-                }
-                if (line[0] !== 'Package') {
-                    if (condition(line)) {
-                        out[modes[modeIndex]].push(line[0]);
-                    }
-                }
-            }
-        });
-        rl.on('close', async () => {
-            res(out);
-        });
-    });
+async function getWatchedPackages(condition) {
+    return {
+        movable: await checkUpdates('-m', condition),
+        upgradable: await checkUpdates('-u', condition)
+    };
 }
 
 fs.readFile(PKGCONFIG, async (err, data) => {
@@ -90,7 +68,6 @@ fs.readFile(PKGCONFIG, async (err, data) => {
     }
     else {
         data = JSON.parse(data);
-        const CHECKUPDATES = data.CHECKUPDATES || path.join(__dirname, 'checkupdates.txt');
         const PREVIOUS = data.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
         url = data.URL || 'http://localhost:8080/artix';
@@ -108,10 +85,15 @@ fs.readFile(PKGCONFIG, async (err, data) => {
             console.log(`Could not read ${PREVIOUS}: ${ex}`);
         }
 
-        let actionable = await parseCheckupdates(CHECKUPDATES, line => packages.indexOf(line[0]) >= 0);
+        let actionable = await getWatchedPackages(line => packages.indexOf(line) >= 0);
 
         movable = actionable.movable;
         upgradable = actionable.upgradable;
+
+        console.log('Movable:');
+        movable.forEach(pkg => console.log(pkg));
+        console.log('\nUpgradable:');
+        upgradable.forEach(pkg => console.log(pkg));
 
         try {
             await fsp.writeFile(PREVIOUS, JSON.stringify({
