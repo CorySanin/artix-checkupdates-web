@@ -3,10 +3,7 @@ FROM gitea.artixlinux.org/artixdocker/artixlinux:base-devel
 VOLUME /usr/volume
 WORKDIR /usr/files
 
-RUN \
-  #sed -i 's:\[system]:[gremlins]\nInclude = /etc/pacman.d/mirrorlist\n\n[system]:' /etc/pacman.conf &&\
-  #sed -i 's:\[world]:[world-gremlins]\nInclude = /etc/pacman.d/mirrorlist\n\n[world]:' /etc/pacman.conf &&\
-  pacman -Syu --noconfirm &&\
+RUN pacman -Syu --noconfirm &&\
   pacman -Sy --noconfirm artools-pkg artix-checkupdates git nodejs npm cronie-openrc openssh icu glibc openssl openssl-1.1 &&\
   mkdir -p /root/.config/artools && \
   mkdir -p /root/.cache && \
