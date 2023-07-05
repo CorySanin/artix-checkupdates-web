@@ -5,8 +5,7 @@ WORKDIR /usr/files
 
 RUN pacman -Syu --noconfirm &&\
   pacman -Sy --noconfirm artools-pkg artix-checkupdates git nodejs npm cronie-openrc openssh icu glibc openssl openssl-1.1 &&\
-  mkdir -p /root/.config/artools && \
-  mkdir -p /root/.cache && \
+  mkdir -p /root/.config/artools/ /root/.cache/ && \
   ln -sf /usr/files/.cron /etc/cron.d/.cron
 
 COPY . .
