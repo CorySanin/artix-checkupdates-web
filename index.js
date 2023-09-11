@@ -32,9 +32,9 @@ function parseCheckUpdatesOutput(output, condition) {
     return packages;
 }
 
-function checkUpdates(flag, condition) {
+function checkUpdates(flags, condition) {
     return new Promise((resolve, reject) => {
-        let process = spawn('artix-checkupdates', [flag]);
+        let process = spawn('artix-checkupdates', flags);
         let timeout = setTimeout(() => {
             reject('Timed out');
             process.kill();
@@ -57,8 +57,8 @@ function checkUpdates(flag, condition) {
 
 async function getWatchedPackages(condition) {
     return {
-        movable: await checkUpdates('-m', condition),
-        upgradable: await checkUpdates('-u', condition)
+        movable: await checkUpdates(['-m', '-t'], condition),
+        upgradable: await checkUpdates(['-u'], condition)
     };
 }
 
