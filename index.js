@@ -44,7 +44,7 @@ function checkUpdates(flags, condition) {
             packagelist = packagelist.concat(parseCheckUpdatesOutput(data.toString(), condition));
         });
         process.stderr.on('data', err => {
-            console.log(err);
+            console.log(err.toString());
         })
         process.on('exit', async (code) => {
             if (code === 0) {
