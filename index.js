@@ -68,7 +68,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
     }
     else {
         data = JSON.parse(data);
-        const PREVIOUS = data.PREVIOUS || '/usr/volume/previous.json';
+        const PREVIOUS = data.PREVIOUS || process.env.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
         url = data.URL || 'http://localhost:8080/artix';
         let previousm = [], previousu = [], movable = [], upgradable = [], newpack = [];
