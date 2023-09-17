@@ -43,6 +43,9 @@ function checkUpdates(flags, condition) {
         process.stdout.on('data', data => {
             packagelist = packagelist.concat(parseCheckUpdatesOutput(data.toString(), condition));
         });
+        process.stderr.on('data', err => {
+            console.log(err);
+        })
         process.on('exit', async (code) => {
             if (code === 0) {
                 clearTimeout(timeout);
@@ -85,41 +88,46 @@ fs.readFile(PKGCONFIG, async (err, data) => {
             console.log(`Could not read ${PREVIOUS}: ${ex}`);
         }
 
-        let actionable = await getWatchedPackages(line => packages.indexOf(line) >= 0);
-
-        movable = actionable.movable;
-        upgradable = actionable.upgradable;
-
-        console.log('Movable:');
-        movable.forEach(pkg => console.log(pkg));
-        console.log('\nUpgradable:');
-        upgradable.forEach(pkg => console.log(pkg));
-
         try {
-            await fsp.writeFile(PREVIOUS, JSON.stringify({
-                packages: upgradable,
-                movable
-            }));
-        }
-        catch (ex) {
-            console.log(`Could not write ${PREVIOUS}: ${ex}`);
-        }
-        movable.forEach(package => {
-            if (previousm.indexOf(package) === -1) {
-                newpack.push(package);
+            let actionable = await getWatchedPackages(line => packages.indexOf(line) >= 0);
+
+            movable = actionable.movable;
+            upgradable = actionable.upgradable;
+
+            console.log('Movable:');
+            movable.forEach(pkg => console.log(pkg));
+            console.log('\nUpgradable:');
+            upgradable.forEach(pkg => console.log(pkg));
+
+            try {
+                await fsp.writeFile(PREVIOUS, JSON.stringify({
+                    packages: upgradable,
+                    movable
+                }));
             }
-        });
-        if (newpack.length > 0) {
-            await notify(newpack, 'move');
-        }
-        newpack = [];
-        upgradable.forEach(package => {
-            if (previousu.indexOf(package) === -1) {
-                newpack.push(package);
+            catch (ex) {
+                console.log(`Could not write ${PREVIOUS}: ${ex}`);
             }
-        });
-        if (newpack.length > 0) {
-            await notify(newpack, 'upgrade');
+            movable.forEach(package => {
+                if (previousm.indexOf(package) === -1) {
+                    newpack.push(package);
+                }
+            });
+            if (newpack.length > 0) {
+                await notify(newpack, 'move');
+            }
+            newpack = [];
+            upgradable.forEach(package => {
+                if (previousu.indexOf(package) === -1) {
+                    newpack.push(package);
+                }
+            });
+            if (newpack.length > 0) {
+                await notify(newpack, 'upgrade');
+            }
+        }
+        catch(ex) {
+            console.log('Task failed:', ex);
         }
     }
 });
