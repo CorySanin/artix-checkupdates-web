@@ -7,15 +7,14 @@ const TIMEOUT = 180000;
 const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
 const EXTRASPACE = new RegExp('\\s+', 'g');
 
-let url;
-
-function notify(packarr, type) {
+function notify(apprise, packarr, type) {
     return phin({
-        url,
+        url: apprise.api,
         method: 'POST',
         data: {
-            type,
-            packages: packarr.join('<br/>')
+            title: `Packages ready to ${type}`,
+            body: packarr.join('\n'),
+            urls: apprise.urls.join(',')
         }
     });
 }
@@ -73,7 +72,6 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         data = JSON.parse(data);
         const PREVIOUS = data.PREVIOUS || process.env.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
-        url = data.URL || 'http://localhost:8080/artix';
         let previousm = [], previousu = [], movable = [], upgradable = [], newpack = [];
         try {
             const p = JSON.parse(await fsp.readFile(PREVIOUS));
@@ -114,7 +112,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
                 }
             });
             if (newpack.length > 0) {
-                await notify(newpack, 'move');
+                await notify(data.apprise, newpack, 'move');
             }
             newpack = [];
             upgradable.forEach(package => {
@@ -123,7 +121,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
                 }
             });
             if (newpack.length > 0) {
-                await notify(newpack, 'upgrade');
+                await notify(data.apprise, newpack, 'upgrade');
             }
         }
         catch(ex) {
