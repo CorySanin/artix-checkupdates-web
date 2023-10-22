@@ -59,7 +59,7 @@ function checkUpdates(flags, condition) {
 
 async function getWatchedPackages(condition) {
     return {
-        movable: await checkUpdates(['-m', '-t'], condition),
+        movable: await checkUpdates(['-m'], condition),
         upgradable: await checkUpdates(['-u'], condition)
     };
 }
