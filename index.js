@@ -9,7 +9,7 @@ const EXTRASPACE = new RegExp('\\s+', 'g');
 
 function notify(apprise, packarr, type) {
     return phin({
-        url: apprise.api,
+        url: `${apprise.api}/notify/`,
         method: 'POST',
         data: {
             title: `Packages ready to ${type}`,
