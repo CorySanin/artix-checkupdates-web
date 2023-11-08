@@ -19,19 +19,19 @@ function notify(apprise, packarr, type) {
     });
 }
 
-function parseCheckUpdatesOutput(output, condition) {
+function parseCheckUpdatesOutput(output) {
     let packages = [];
     let lines = output.split('\n');
     lines.forEach(l => {
-        let package = l.trim().replace(EXTRASPACE, ' ').split(' ', 2)[0];
-        if (condition(package)) {
-            packages.push(package);
+        let package = l.trim().replace(EXTRASPACE, ' ');
+        if (package.length > 0 && package.indexOf('Package basename') < 0) {
+            packages.push(package.split(' ', 2)[0]);
         }
     });
     return packages;
 }
 
-function checkUpdates(flags, condition) {
+function checkUpdates(flags) {
     return new Promise((resolve, reject) => {
         let process = spawn('artix-checkupdates', flags);
         let timeout = setTimeout(() => {
@@ -40,7 +40,7 @@ function checkUpdates(flags, condition) {
         }, TIMEOUT);
         let packagelist = [];
         process.stdout.on('data', data => {
-            packagelist = packagelist.concat(parseCheckUpdatesOutput(data.toString(), condition));
+            packagelist = packagelist.concat(parseCheckUpdatesOutput(data.toString()));
         });
         process.stderr.on('data', err => {
             console.log(err.toString());
@@ -57,10 +57,10 @@ function checkUpdates(flags, condition) {
     });
 }
 
-async function getWatchedPackages(condition) {
+async function getPendingPackages() {
     return {
-        movable: await checkUpdates(['-m'], condition),
-        upgradable: await checkUpdates(['-u'], condition)
+        movable: await checkUpdates(['-m']),
+        upgradable: await checkUpdates(['-u'])
     };
 }
 
@@ -72,6 +72,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         data = JSON.parse(data);
         const PREVIOUS = data.PREVIOUS || process.env.PREVIOUS || '/usr/volume/previous.json';
         const packages = data.packages;
+        const actionableFilter = p => packages.indexOf(p) >= 0;
         let previousm = [], previousu = [], movable = [], upgradable = [], newpack = [];
         try {
             const p = JSON.parse(await fsp.readFile(PREVIOUS));
@@ -87,21 +88,27 @@ fs.readFile(PKGCONFIG, async (err, data) => {
         }
 
         try {
-            let actionable = await getWatchedPackages(line => packages.indexOf(line) >= 0);
+            let allPending = await getPendingPackages();
 
-            movable = actionable.movable;
-            upgradable = actionable.upgradable;
+            movable = allPending.movable.filter(actionableFilter);
+            upgradable = allPending.upgradable.filter(actionableFilter);
 
             console.log('Movable:');
             movable.forEach(pkg => console.log(pkg));
             console.log('\nUpgradable:');
             upgradable.forEach(pkg => console.log(pkg));
 
+            let output = {
+                packages: upgradable,
+                movable
+            };
+            if (data.writeAllPending) {
+                output['allPackages'] = allPending.upgradable;
+                output['allMovable'] = allPending.movable;
+            }
+
             try {
-                await fsp.writeFile(PREVIOUS, JSON.stringify({
-                    packages: upgradable,
-                    movable
-                }));
+                await fsp.writeFile(PREVIOUS, JSON.stringify(output));
             }
             catch (ex) {
                 console.log(`Could not write ${PREVIOUS}: ${ex}`);
@@ -124,7 +131,7 @@ fs.readFile(PKGCONFIG, async (err, data) => {
                 await notify(data.apprise, newpack, 'upgrade');
             }
         }
-        catch(ex) {
+        catch (ex) {
             console.log('Task failed:', ex);
         }
     }
