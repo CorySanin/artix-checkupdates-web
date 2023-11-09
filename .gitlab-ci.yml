@@ -8,8 +8,14 @@ variables:
 stages:
     - build
 
-build:
+artix-packy-pusher:
     stage: build
     script:
         - docker build --pull --no-cache -t "$CI_REGISTRY_IMAGE" .
         - if [ ! -z ${PROTECTEDBRANCH+x} ]; then docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY; docker push "$CI_REGISTRY_IMAGE"; fi
+
+artix-packy-exporter:
+    stage: build
+    script:
+        - docker build --pull --no-cache -t "$CI_REGISTRY_IMAGE:exporter" .
+        - if [ ! -z ${PROTECTEDBRANCH+x} ]; then docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY; docker push "$CI_REGISTRY_IMAGE:exporter"; fi
