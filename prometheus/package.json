@@ -1,5 +1,6 @@
 {
   "name": "artix-packy-exporter",
+  "version": "2.2.0",
   "module": "index.ts",
   "type": "module",
   "dependencies": {

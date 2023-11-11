@@ -26,6 +26,15 @@ new prom.Gauge({
     }
 });
 
+new prom.Gauge({
+    name: `${process.env.METRICPREFIX || 'artixpackages_'}watched_packages`,
+    help: 'Number of packages being monitored for updates.',
+    async collect() {
+        const config = JSON.parse((await fsp.readFile(process.env.PACKAGES || '/usr/volume/packages.json')).toString());
+        this.set('packages' in config ? config['packages'].length : 0);
+    }
+});
+
 http.get('/', async (req, res) => {
     res.send(NAME);
 });
