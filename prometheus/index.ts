@@ -6,6 +6,7 @@ const http = express();
 
 const NAME = 'Artix Package Exporter';
 const PORT = process.env.PORT || 8080;
+const METRICPREFIX = process.env.METRICPREFIX || 'artixpackages_';
 const register = prom.register;
 const NICE_NAMES: any = {
     packages: 'My upgradable',
@@ -15,7 +16,7 @@ const NICE_NAMES: any = {
 };
 
 new prom.Gauge({
-    name: `${process.env.METRICPREFIX || 'artixpackages_'}pending_packages`,
+    name: `${METRICPREFIX}pending_packages`,
     help: 'Number of packages that have pending updates or moves.',
     labelNames: ['category'],
     async collect() {
@@ -27,7 +28,7 @@ new prom.Gauge({
 });
 
 new prom.Gauge({
-    name: `${process.env.METRICPREFIX || 'artixpackages_'}watched_packages`,
+    name: `${METRICPREFIX}watched_packages`,
     help: 'Number of packages being monitored for updates.',
     async collect() {
         const config = JSON.parse((await fsp.readFile(process.env.PACKAGES || '/usr/volume/packages.json')).toString());
@@ -35,11 +36,11 @@ new prom.Gauge({
     }
 });
 
-http.get('/', async (req, res) => {
+http.get('/', async (_, res) => {
     res.send(NAME);
 });
 
-http.get('/metrics', async (req, res) => {
+http.get('/metrics', async (_, res) => {
     try {
         res.set('Content-Type', register.contentType);
         res.end(await register.metrics());
@@ -49,7 +50,7 @@ http.get('/metrics', async (req, res) => {
     }
 });
 
-http.get('/healthcheck', async (req, res) => {
+http.get('/healthcheck', async (_, res) => {
     res.send('Healthy');
 });
 
