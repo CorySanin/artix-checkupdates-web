@@ -1,6 +1,6 @@
 {
   "name": "artix-packy-notifier",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Determine packages that need attention",
   "main": "index.js",
   "repository": {

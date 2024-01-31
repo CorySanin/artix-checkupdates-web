@@ -7,16 +7,25 @@ const TIMEOUT = 180000;
 const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
 const EXTRASPACE = new RegExp('\\s+', 'g');
 
-function notify(apprise, packarr, type) {
-    return phin({
-        url: `${apprise.api}/notify/`,
-        method: 'POST',
-        data: {
-            title: `Packages ready to ${type}`,
-            body: packarr.join('\n'),
-            urls: apprise.urls.join(',')
+async function notify(apprise, packarr, type) {
+    for (let i = 0; i < 25; i++) {
+        try {
+            return await phin({
+                url: `${apprise.api}/notify/`,
+                method: 'POST',
+                data: {
+                    title: `Packages ready to ${type}`,
+                    body: packarr.join('\n'),
+                    urls: apprise.urls.join(',')
+                }
+            });
         }
-    });
+        catch (ex) {
+            console.error('Failed to send notification, attempt #%d', i + 1);
+            console.error(ex);
+        }
+    }
+    return null;
 }
 
 function parseCheckUpdatesOutput(output) {
