@@ -3,8 +3,7 @@ FROM gitea.artixlinux.org/artixdocker/artixlinux:base-devel
 VOLUME /usr/volume
 WORKDIR /usr/files
 
-RUN pacman -Syu --noconfirm &&\
-  pacman -Sy --noconfirm artools-pkg artix-checkupdates git nodejs npm cronie-openrc openssh icu glibc openssl openssl-1.1 &&\
+RUN pacman -Sy --noconfirm artools-pkg artix-checkupdates git nodejs npm cronie-openrc openssh icu glibc openssl openssl-1.1 &&\
   mkdir -p /root/.config/artools/ /root/.cache/ && \
   ln -sf /usr/files/.cron /etc/cron.d/.cron
 
