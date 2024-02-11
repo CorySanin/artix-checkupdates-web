@@ -29,7 +29,8 @@ RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs npm op
 
 COPY --from=build-env /usr/notifier /usr/notifier
 
-RUN mkdir -p ./config /home/artix/.config/artix-checkupdates /home/artix/.config/artools && \
+RUN mkdir -p ./config /home/artix/.config/artix-checkupdates \
+  /home/artix/.config/artools /home/artix/.cache/artix-checkupdates && \
   chown -R artix:artix /home/artix/ && \
   chown -R artix:artix .
 
