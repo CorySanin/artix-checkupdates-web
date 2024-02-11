@@ -1,21 +1,169 @@
+const path = require('path');
 const fs = require('fs');
-const fsp = fs.promises;
 const spawn = require('child_process').spawn;
+const cron = require('node-cron');
+const dayjs = require('dayjs');
+const json5 = require('json5');
 const phin = require('phin');
+const DB = require('./db');
+const Web = require('./web');
+const fsp = fs.promises;
 
 const TIMEOUT = 180000;
-const PKGCONFIG = process.env.PKGCONFIG || '/usr/volume/packages.json';
 const EXTRASPACE = new RegExp('\\s+', 'g');
+const NICETYPES = {
+    move: 'move',
+    udate: 'update'
+}
+
+let saveData = {
+    'last-sync': null,
+    move: [],
+    update: []
+}
+
+let cronjob;
+
+let savePath = process.env.SAVEPATH || path.join(__dirname, 'config', 'data.json');
+
+fs.readFile(process.env.CONFIGPATH || path.join(__dirname, 'config', 'config.json'), async (err, data) => {
+    if (err) {
+        console.error(err);
+        process.exit(1);
+    }
+    else {
+        const config = json5.parse(data);
+        savePath = config.savePath || savePath;
+        const db = new DB(process.env.DBPATH || config.db || path.join(__dirname, 'config', 'packages.db'));
+
+        try {
+            saveData = JSON.parse(await fsp.readFile(savePath));
+        }
+        catch {
+            console.error(`Failed to read existing save data at ${savePath}`);
+        }
+
+        // resetting flags in case of improper shutdown
+        db.restoreFlags();
+
+        cronjob = cron.schedule(process.env.CRON || config.cron || '*/30 * * * *', () => {
+            main(config, db);
+        });
+
+        process.on('SIGTERM', (new Web(db, config, saveData)).close);
+    }
+});
+
+async function main(config, db) {
+    console.log('Starting scheduled task');
+    cronjob.stop();
+    let now = dayjs();
+    if (!('last-sync' in saveData) || !saveData['last-sync'] || dayjs(saveData['last-sync']).isBefore(now.subtract(3, 'days'))) {
+        await updateMaintainers(config, db);
+        saveData['last-sync'] = now.toJSON();
+        await writeSaveData();
+    }
+    await checkupdates(config, db);
+    await writeSaveData();
+    cronjob.start();
+    console.log('Task complete.');
+}
+
+async function writeSaveData() {
+    try {
+        await fsp.writeFile(savePath, JSON.stringify(saveData));
+    }
+    catch {
+        console.error(`Failed to write save data to ${savePath}`);
+    }
+}
+
+async function checkupdates(config, db) {
+    await handleUpdates(config, db, saveData.move = await execCheckUpdates(['-m']), 'move');
+    await handleUpdates(config, db, saveData.update = await execCheckUpdates(['-u']), 'udate');
+}
+
+async function handleUpdates(config, db, packs, type) {
+    packs.forEach(v => {
+        let p = db.getPackage(v);
+        p && db.updateFlag(v, type, p[type] > 0 ? 2 : 4);
+    });
+
+    for (let i = 0; i < config.maintainers.length; i++) {
+        let m = config.maintainers[i];
+        if (typeof m === 'object') {
+            notify({
+                api: config.apprise,
+                urls: m.channels
+            }, db.getNewByMaintainer(m.name, type), NICETYPES[type])
+        }
+    }
+
+    db.decrementFlags(type);
+    db.restoreFlags(type);
+}
+
+async function updateMaintainers(config, db) {
+    console.log('Syncing packages...');
+    const lastseen = (new Date()).getTime();
+    const maintainers = config.maintainers;
+    for (let i = 0; maintainers && i < maintainers.length; i++) {
+        let maintainer = maintainers[i];
+        if (typeof maintainer === 'object') {
+            maintainer = maintainer.name;
+        }
+        console.log(`Syncing ${maintainer}...`);
+        try {
+            (await getMaintainersPackages(maintainer)).forEach(package => db.updatePackage(package, maintainer, lastseen));
+        }
+        catch (err) {
+            console.error(`Failed to get packages for ${maintainer}`);
+            console.error(err);
+        }
+    }
+    console.log(`removing unused packages...`);
+    db.cleanOldPackages(lastseen);
+    console.log(`Package sync complete`);
+}
+
+function getMaintainersPackages(maintainer) {
+    return new Promise((resolve, reject) => {
+        let process = spawn('artixpkg', ['admin', 'query', '-m', maintainer]);
+        let timeout = setTimeout(() => {
+            reject('Timed out');
+            process.kill();
+        }, TIMEOUT);
+        let packagelist = [];
+        process.stdout.on('data', data => {
+            packagelist = packagelist.concat(data.toString().trim().split('\n'));
+        });
+        process.stderr.on('data', err => {
+            console.error(err.toString());
+        })
+        process.on('exit', async (code) => {
+            if (code === 0) {
+                clearTimeout(timeout);
+                resolve(packagelist);
+            }
+            else {
+                reject(code);
+            }
+        });
+    });
+}
 
 async function notify(apprise, packarr, type) {
+    if (!(packarr && packarr.length)) {
+        return;
+    }
     for (let i = 0; i < 25; i++) {
         try {
             return await phin({
                 url: `${apprise.api}/notify/`,
                 method: 'POST',
                 data: {
-                    title: `Packages ready to ${type}`,
-                    body: packarr.join('\n'),
+                    title: `${packarr[0].maintainer}: packages ready to ${type}`,
+                    body: packarr.map(p => p.package).join('\n'),
                     urls: apprise.urls.join(',')
                 }
             });
@@ -40,24 +188,24 @@ function parseCheckUpdatesOutput(output) {
     return packages;
 }
 
-function checkUpdates(flags) {
+function execCheckUpdates(flags) {
     return new Promise((resolve, reject) => {
         let process = spawn('artix-checkupdates', flags);
         let timeout = setTimeout(() => {
             reject('Timed out');
             process.kill();
         }, TIMEOUT);
-        let packagelist = [];
+        let outputstr = '';
         process.stdout.on('data', data => {
-            packagelist = packagelist.concat(parseCheckUpdatesOutput(data.toString()));
+            outputstr += data.toString();
         });
         process.stderr.on('data', err => {
-            console.log(err.toString());
+            console.error(err.toString());
         })
         process.on('exit', async (code) => {
             if (code === 0) {
                 clearTimeout(timeout);
-                resolve(packagelist);
+                resolve(parseCheckUpdatesOutput(outputstr));
             }
             else {
                 reject(code);
@@ -65,83 +213,3 @@ function checkUpdates(flags) {
         });
     });
 }
-
-async function getPendingPackages() {
-    return {
-        movable: await checkUpdates(['-m']),
-        upgradable: await checkUpdates(['-u'])
-    };
-}
-
-fs.readFile(PKGCONFIG, async (err, data) => {
-    if (err) {
-        console.log(err);
-    }
-    else {
-        data = JSON.parse(data);
-        const PREVIOUS = data.PREVIOUS || process.env.PREVIOUS || '/usr/volume/previous.json';
-        const packages = data.packages;
-        const actionableFilter = p => packages.indexOf(p) >= 0;
-        let previousm = [], previousu = [], movable = [], upgradable = [], newpack = [];
-        try {
-            const p = JSON.parse(await fsp.readFile(PREVIOUS));
-            if ('packages' in p) {
-                previousu = p.packages;
-            }
-            if ('movable' in p) {
-                previousm = p.movable;
-            }
-        }
-        catch (ex) {
-            console.log(`Could not read ${PREVIOUS}: ${ex}`);
-        }
-
-        try {
-            let allPending = await getPendingPackages();
-
-            movable = allPending.movable.filter(actionableFilter);
-            upgradable = allPending.upgradable.filter(actionableFilter);
-
-            console.log('Movable:');
-            movable.forEach(pkg => console.log(pkg));
-            console.log('\nUpgradable:');
-            upgradable.forEach(pkg => console.log(pkg));
-
-            let output = {
-                packages: upgradable,
-                movable
-            };
-            if (data.writeAllPending) {
-                output['allPackages'] = allPending.upgradable;
-                output['allMovable'] = allPending.movable;
-            }
-
-            try {
-                await fsp.writeFile(PREVIOUS, JSON.stringify(output));
-            }
-            catch (ex) {
-                console.log(`Could not write ${PREVIOUS}: ${ex}`);
-            }
-            movable.forEach(package => {
-                if (previousm.indexOf(package) === -1) {
-                    newpack.push(package);
-                }
-            });
-            if (newpack.length > 0) {
-                await notify(data.apprise, newpack, 'move');
-            }
-            newpack = [];
-            upgradable.forEach(package => {
-                if (previousu.indexOf(package) === -1) {
-                    newpack.push(package);
-                }
-            });
-            if (newpack.length > 0) {
-                await notify(data.apprise, newpack, 'upgrade');
-            }
-        }
-        catch (ex) {
-            console.log('Task failed:', ex);
-        }
-    }
-});
