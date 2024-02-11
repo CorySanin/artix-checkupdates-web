@@ -5,20 +5,11 @@ services:
       build:
          context: ./
       volumes:
-         - ./volume:/usr/volume
+         - ./config:/usr/notifier/config
+      ports:
+         - 8080:8080
       environment:
          ARTIX_MIRROR: "https://mirrors.qontinuum.space/artixlinux/%s/os/x86_64"
          ARCH_MIRROR: "https://mirrors.qontinuum.space/archlinux/%s/os/x86_64"
          ARTIX_REPOS: "system-goblins,world-goblins,system-gremlins,world-gremlins,system,world"
          ARCH_REPOS: "core-staging,extra-staging,core-testing,extra-testing,core,extra"
-         CRON: "*/30 * * * *"
-   
-   packy-prom:
-      build:
-         context: ./prometheus
-      volumes:
-         - ./volume:/usr/volume
-      ports:
-         - 8080:8080
-      environment:
-         PORT: 8080

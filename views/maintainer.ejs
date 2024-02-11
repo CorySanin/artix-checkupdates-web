@@ -1,0 +1,29 @@
+<%- include("head", locals) %>
+
+<body>
+    <%- include("header", locals) %>
+    <div class="container bg">
+        <h1><%= maintainer %>'s Operations</h1>
+        <p>
+            <%= maintainer %> owns <a href="https://gitea.artixlinux.org/explore/repos?q=maintainer-<%= maintainer %>&topic=1"><%= packagesOwned %> packages</a>.
+        </p>
+        <table>
+            <tr>
+                <th>Package</th>
+                <th>Action</th>
+            </tr>
+            <% moves && moves.forEach(p => { %>
+            <tr>
+                <td><%= p.package %></td>
+                <td>Move</td>
+            </tr>
+            <% }); %>
+            <% updates && updates.forEach(p => { %>
+            <tr>
+                <td><%= p.package %></td>
+                <td>Update</td>
+            </tr>
+            <% }); %>
+        </table>
+    </div>
+</body>

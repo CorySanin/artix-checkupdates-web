@@ -1,0 +1,34 @@
+<%- include("head", locals) %>
+
+<body>
+    <%- include("header", locals) %>
+    <div class="container bg">
+        <h1>Pending Packages</h1>
+        <h2>By Maintainer</h2>
+        <ul>
+            <% maintainers && maintainers.forEach(m => { %>
+            <li><a href="/maintainer/<%= m %>"><%= m %></a></li>
+            <% }); %>
+        </ul>
+        <h2>All Pending</h2>
+        <table>
+            <tr>
+                <th>Package</th>
+                <th>Action</th>
+            </tr>
+            <% savedata.move && savedata.move.forEach(p => { %>
+            <tr>
+                <td><%= p %></td>
+                <td>Move</td>
+            </tr>
+            <% }); %>
+            <% savedata.update && savedata.update.forEach(p => { %>
+            <tr>
+                <td><%= p %></td>
+                <td>Update</td>
+            </tr>
+            <% }); %>
+        </table>
+    </div>
+    <%- include("footer", locals) %>
+</body>

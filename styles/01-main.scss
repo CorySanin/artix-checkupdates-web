@@ -1,0 +1,177 @@
+html,
+body {
+    font-family: sans-serif;
+    box-sizing: border-box;
+    background-color: #1a1a1a;
+    color: #d9d9d9;
+    font-size: 1.1em;
+    line-height: 1.2em;
+}
+
+*,
+*::before,
+*:after {
+    box-sizing: inherit;
+}
+
+h1 {
+    font-size: 1.8em;
+    line-height: 1.5em;
+    text-transform: uppercase;
+}
+
+h2 {
+    font-size: 1.6em;
+    line-height: 1.4em;
+}
+
+h3 {
+    font-size: 1.5em;
+    line-height: 1.3em;
+}
+
+h4 {
+    font-size: 1.4em;
+    line-height: 1.2em;
+}
+
+h5 {
+    font-size: 1.3em;
+    line-height: 1.1em;
+}
+
+h6 {
+    font-size: 1.2em;
+    line-height: 1.1em;
+}
+
+p {
+    margin-bottom: .5em;
+}
+
+a {
+    text-decoration: none;
+    color: #53bffc;
+}
+
+a:hover,
+a:focus {
+    color: #92D7FC;
+    text-decoration: underline;
+}
+
+ul {
+    li {
+        line-height: 1.75em;
+    }
+}
+
+table {
+    background-color: #1a1a1a;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td,
+th {
+    border: 1px solid #858585;
+    text-align: left;
+    overflow-x: auto;
+    overflow-wrap: anywhere;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #111;
+}
+
+th {
+    color: #fff;
+    background-color: #0f3147;
+    border: 1px solid #0A6682;
+    white-space: nowrap;
+}
+
+header {
+
+    a:hover,
+    a:focus {
+        text-decoration: none;
+    }
+
+    a.logo {
+        display: inline-block;
+        height: 3em;
+
+        svg {
+            width: 3em;
+            height: 3em;
+        }
+    }
+
+    svg+span {
+        display: none;
+    }
+
+    nav {
+        float: right;
+
+        ul li {
+
+            display: inline-block;
+
+            a {
+                display: inline-block;
+                line-height: 3em;
+                height: 3em;
+                padding: 0 10px 0 10px;
+
+                &:hover,
+                &:focus {
+                    border-bottom: 2px solid #92D7FC;
+                }
+            }
+        }
+    }
+}
+
+footer {
+    font-size: 9pt;
+}
+
+.container {
+    padding: .5em .75em;
+    width: 80%;
+    margin: .5em auto;
+    border: 1px solid rgba(0, 0, 0, 0);
+
+    &.bg {
+        background-color: #2a2a2a;
+        border: 1px solid #858585;
+    }
+}
+
+@media screen and (max-width:790px) {
+    .container {
+        width: initial;
+        margin: .5em .5em;
+    }
+}
+
+@media screen and (max-width:660px) {
+    header {
+        nav {
+            float: initial;
+        }
+    }
+}
+
+@media screen and (max-width:270px) {
+    header nav ul li {
+        display: block;
+
+        a {
+            display: block;
+        }
+    }
+}

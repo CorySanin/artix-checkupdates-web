@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 46.725 46.725"><script xmlns=""/>
+  <script/>
+  <defs>
+    <linearGradient xlink:href="#a" id="h" x1="70.513" x2="63.044" y1="62.847" y2="59.204" gradientTransform="matrix(-1 0 0 1 114.837 50.597)" gradientUnits="userSpaceOnUse"/>
+    <linearGradient id="a">
+      <stop offset="0" stop-color="#fff" stop-opacity=".365"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient xlink:href="#a" id="g" x1="70.513" x2="55.281" y1="62.847" y2="56.394" gradientTransform="translate(-21.061 67.885)" gradientUnits="userSpaceOnUse"/>
+    <linearGradient xlink:href="#b" id="f" x1="70.725" x2="81.158" y1="12.292" y2="19.324" gradientTransform="translate(-11.754 126.585)" gradientUnits="userSpaceOnUse"/>
+    <linearGradient id="b">
+      <stop offset="0" stop-opacity=".102"/>
+      <stop offset="1" stop-opacity=".304"/>
+    </linearGradient>
+    <linearGradient xlink:href="#b" id="e" x1="70.725" x2="87.092" y1="12.292" y2="26.895" gradientTransform="translate(-26.4 101.152)" gradientUnits="userSpaceOnUse"/>
+    <linearGradient xlink:href="#b" id="d" x1="105.834" x2="80.209" y1="15.354" y2="30.531" gradientTransform="translate(-56.383 115.378)" gradientUnits="userSpaceOnUse"/>
+    <linearGradient xlink:href="#a" id="c" x1="75.543" x2="81.2" y1="145.986" y2="143.227" gradientTransform="translate(-16.572 -7.109)" gradientUnits="userSpaceOnUse"/>
+  </defs>
+  <path fill="#10a0cc" stroke-width=".1" d="m23.362 0-8.034 16.474 22.112 12.39zM12.901 21.45.574 46.726l36.578-15.111zm26.955 12.368L28.32 40.441l17.832 6.284z"/>
+  <path fill="url(#c)" stroke-width=".265" d="m58.971 138.877 4.138-5.876 6.295 12.908z" transform="translate(-23.253 -99.183)"/>
+  <path fill="url(#d)" stroke-width=".265" d="m23.826 145.909 25.626-15.177 10.952.065z" transform="translate(-23.253 -99.183)"/>
+  <path fill="url(#e)" stroke-width=".265" d="m60.693 128.047-22.112-12.39 5.744-2.213z" transform="translate(-23.253 -99.183)"/>
+  <path fill="url(#f)" stroke-width=".265" d="m69.404 145.909-17.831-6.284 7.398-.748z" transform="translate(-23.253 -99.183)"/>
+  <path fill="url(#g)" stroke-width=".265" d="m23.826 145.909 25.626-15.177-13.3-10.098z" transform="translate(-23.253 -99.183)"/>
+  <path fill="url(#h)" stroke-width=".265" d="m60.693 128.047-16.368-14.603 2.29-14.26z" transform="translate(-23.253 -99.183)"/>
+</svg>

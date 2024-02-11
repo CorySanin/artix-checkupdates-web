@@ -1,22 +1,44 @@
-FROM gitea.artixlinux.org/artixdocker/artixlinux:base-devel
+FROM artixlinux/artixlinux:devel as build-env
 
-VOLUME /usr/volume
-WORKDIR /usr/files
+WORKDIR /usr/notifier
 
-RUN pacman -Sy --noconfirm artools-pkg artix-checkupdates git nodejs npm cronie-openrc openssh icu glibc openssl openssl-1.1 &&\
-  mkdir -p /root/.config/artools/ /root/.cache/ && \
-  ln -sf /usr/files/.cron /etc/cron.d/.cron
+RUN pacman -Sy --noconfirm nodejs npm
+
+COPY package*.json ./
+
+RUN npm install
 
 COPY . .
 
-RUN chmod 0644 ./* && \
-  chmod +x ./*.sh && \
-  npm install
+RUN npm run-script build && \
+  npm ci --only=production
 
-ENV CRON="*/30 * * * *"
+
+FROM artixlinux/artixlinux:devel as deploy
+
+VOLUME /usr/notifier/config
+WORKDIR /usr/notifier
+HEALTHCHECK  --timeout=3s \
+  CMD curl --fail http://localhost:8080/healthcheck || exit 1
+
+EXPOSE 8080
+
+RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs npm openssh icu glibc openssl openssl-1.1 &&\
+  mkdir -p /root/.config/artools/ /root/.cache/ && \
+  useradd -m artix
+
+COPY --from=build-env /usr/notifier /usr/notifier
+
+RUN mkdir -p ./config /home/artix/.config/artix-checkupdates /home/artix/.config/artools && \
+  chown -R artix:artix /home/artix/ && \
+  chown -R artix:artix .
+
+USER artix
+
 ENV ARTIX_MIRROR="https://mirrors.qontinuum.space/artixlinux/%s/os/x86_64"
 ENV ARCH_MIRROR="https://mirrors.qontinuum.space/archlinux/%s/os/x86_64"
 ENV ARTIX_REPOS="system-goblins,world-goblins,galaxy-goblins,lib32-goblins,system-gremlins,world-gremlins,galaxy-gremlins,lib32-gremlins,system,world,galaxy,lib32"
 ENV ARCH_REPOS="core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib"
+ENV GITEA_TOKEN="CHANGEME"
 
 CMD ./startup.sh
