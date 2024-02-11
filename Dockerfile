@@ -18,7 +18,7 @@ FROM artixlinux/artixlinux:devel as deploy
 
 VOLUME /usr/notifier/config
 WORKDIR /usr/notifier
-HEALTHCHECK  --timeout=3s \
+HEALTHCHECK  --timeout=15m \
   CMD curl --fail http://localhost:8080/healthcheck || exit 1
 
 EXPOSE 8080
