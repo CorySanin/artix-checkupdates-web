@@ -7,9 +7,30 @@ const PROJECT_ROOT = __dirname;
 const VIEWOPTIONS = {
     outputFunctionName: 'echo'
 };
+const NAMECOMPLIANCE = [
+    p => p.replace(/([a-zA-Z0-9]+)\+([a-zA-Z]+)/g, '$1-$2'),
+    p => p.replace(/\+/g, "plus"),
+    p => p.replace(/[^a-zA-Z0-9_\-\.]/g, "-"),
+    p => p.replace(/[_\-]{2,}/g, "-")
+]
 
 function inliner(file) {
     return fs.readFileSync(path.join(PROJECT_ROOT, file));
+}
+
+function packageUrl(p) {
+    let packagename = typeof p === 'string' ? p : p.package;
+    return `https://gitea.artixlinux.org/packages/${NAMECOMPLIANCE.reduce((s, fn) => fn(s), packagename)}`;
+}
+
+function prepPackages(arr, action) {
+    return arr.map(m => {
+        return {
+            package: m,
+            action,
+            url: packageUrl(m)
+        }
+    });
 }
 
 class Web {
@@ -51,6 +72,8 @@ class Web {
         });
 
         app.get('/', async (_, res) => {
+            let packages = prepPackages(savedata.move, 'Move');
+            packages = packages.concat(prepPackages(savedata.update, 'Update'));
             res.render('index',
                 {
                     inliner,
@@ -58,7 +81,7 @@ class Web {
                         prefix: 'Artix Checkupdates',
                         suffix: 'Web Edition'
                     },
-                    savedata,
+                    packages,
                     maintainers: maintainers
                 },
                 function (err, html) {
@@ -76,6 +99,8 @@ class Web {
         app.get('/maintainer/:maintainer', async (req, res) => {
             const maintainer = req.params.maintainer;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
+            let packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move');
+            packages = packages.concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
             if (packagesOwned > 0) {
                 res.render('maintainer',
                     {
@@ -86,8 +111,7 @@ class Web {
                         },
                         maintainer,
                         packagesOwned,
-                        moves: db.getPackagesByMaintainer(maintainer, 'move'),
-                        updates: db.getPackagesByMaintainer(maintainer, 'udate'),
+                        packages
                     },
                     function (err, html) {
                         if (!err) {

@@ -137,6 +137,15 @@ header {
 
 footer {
     font-size: 9pt;
+
+    ul li {
+        display: inline-block;
+        padding: 0 1em 0 0;
+    }
+}
+
+table tr td:last-child {
+    min-width: 6em;
 }
 
 .container {
@@ -167,11 +176,21 @@ footer {
 }
 
 @media screen and (max-width:270px) {
+    footer ul li {
+        display: block;
+    }
+
     header nav ul li {
         display: block;
 
         a {
             display: block;
         }
+    }
+
+    html,
+    body {
+        font-size: 1em;
+        line-height: 1.1em;
     }
 }

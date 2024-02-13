@@ -12,16 +12,10 @@
                 <th>Package</th>
                 <th>Action</th>
             </tr>
-            <% moves && moves.forEach(p => { %>
+            <% packages && packages.forEach(p => { %>
             <tr>
-                <td><%= p.package %></td>
-                <td>Move</td>
-            </tr>
-            <% }); %>
-            <% updates && updates.forEach(p => { %>
-            <tr>
-                <td><%= p.package %></td>
-                <td>Update</td>
+                <td><a href="<%= p.url %>"><%= p.package.package %></a></td>
+                <td><%= p.action %></td>
             </tr>
             <% }); %>
         </table>
