@@ -31,6 +31,8 @@ COPY --from=build-env /usr/notifier /usr/notifier
 
 RUN mkdir -p ./config /home/artix/.config/artix-checkupdates \
   /home/artix/.config/artools /home/artix/.cache/artix-checkupdates && \
+  ln -sf /usr/notifier/config/artools-pkg.conf /home/artix/.config/artools/artools-pkg.conf && \
+  ln -sf /usr/notifier/config/artix-checkupdates.conf /home/artix/.config/artix-checkupdates/config && \
   chown -R artix:artix /home/artix/ && \
   chown -R artix:artix .
 
@@ -42,4 +44,4 @@ ENV ARTIX_REPOS="system-goblins,world-goblins,galaxy-goblins,lib32-goblins,syste
 ENV ARCH_REPOS="core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib"
 ENV GITEA_TOKEN="CHANGEME"
 
-CMD ./startup.sh
+CMD [ "node", "index.js"]

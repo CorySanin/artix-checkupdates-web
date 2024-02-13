@@ -1,25 +1,44 @@
 # artix-packy-notifier
 
-Notify me when one of my packages needs maintaining
+Notification system and web frontend for Artix packages with pending operations. Notifications can be sent via
+[Apprise](https://github.com/caronc/apprise/wiki#notification-services) or IRC. Web interface shows all packages with pending operations
+and publishes prometheus metrics.
 
-mount a folder to `/usr/volume`.
+## configuration
 
-Inside the volume, create a `packages.json` with the following schema:
+create `config/config.json`:
 
 | Variable        | Description                                                                                                           |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------|
-| PREVIOUS        | The path to store the generated list of actionable packages. Defaults to `previous.json` in the mounted volume.       |
-| packages        | An array of packages to look for pending operations for.                                                              |
-| writeAllPending | Boolean. If all pending packages should be included in the PREVIOUS file. Provided as `allPackages` and `allMovable`. |
-| apprise.api     | The url of the Apprise server to use for sending notifications. For example, "http://192.168.1.123:8000"              |
-| apprise.urls    | An array of Apprise destination URLs to deliver notifications to. For example, "tgram://bot-token/chat-id"            |
+| apprise | The URL of the Apprise instance for sending notifications |
+| maintainers | Array of maintainer names as strings or objects containing the `name` of the maintainer and a list of `channels` to send notifications to |
+| cron | The cron schedule for when the application should check for pending operations via [artix-checkupdates](https://gitea.artixlinux.org/artix/artix-checkupdates) |
+| port | What port to run the webserver on (defaults to 8080) |
+| savePath | Location of auxiliary save data (defaults to `config/data.db`) |
+| db | Location of the SQLite DB (defaults to `config/packages.db`) |
 
-The following environment variables should be supplied.
+## How to run
 
-| Variable     | Description                                |
-|--------------|--------------------------------------------|
-| CRON         | The cron schedule for checking for updates |
-| ARTIX_MIRROR | The Artix mirror to use                    |
-| ARCH_MIRROR  | The Arch mirror to use                     |
-| ARTIX_REPOS  | The Artix repos to check                   |
-| ARCH_REPOS   | The Arch repos to check                    |
+```
+npm install
+node index.js
+```
+
+## Docker Setup
+
+mount a folder to `/usr/notifier/config`.
+
+Include a `config.json` as described above.
+
+Include `artools-pkg.conf`:
+```
+GIT_TOKEN='YOUR-GITEA-TOKEN-HERE'
+```
+
+Include `artix-checkupdates.conf`:
+```
+ARTIX_MIRROR=https://example.com/%s/os/x86_64
+ARCH_MIRROR=https://example.com/%s/os/x86_64
+ARTIX_REPOS=system-goblins,world-goblins,galaxy-goblins,lib32-goblins,system-gremlins,world-gremlins,galaxy-gremlins,lib32-gremlins,system,world,galaxy,lib32
+ARCH_REPOS=core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib
+```
