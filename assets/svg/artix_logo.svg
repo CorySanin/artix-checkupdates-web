@@ -16,7 +16,7 @@
     <linearGradient xlink:href="#b" id="d" x1="105.834" x2="80.209" y1="15.354" y2="30.531" gradientTransform="translate(-56.383 115.378)" gradientUnits="userSpaceOnUse"/>
     <linearGradient xlink:href="#a" id="c" x1="75.543" x2="81.2" y1="145.986" y2="143.227" gradientTransform="translate(-16.572 -7.109)" gradientUnits="userSpaceOnUse"/>
   </defs>
-  <path fill="#10a0cc" stroke-width=".1" d="m23.362 0-8.034 16.474 22.112 12.39zM12.901 21.45.574 46.726l36.578-15.111zm26.955 12.368L28.32 40.441l17.832 6.284z"/>
+  <path class="artix-logo-base" fill="#10a0cc" stroke-width=".1" d="m23.362 0-8.034 16.474 22.112 12.39zM12.901 21.45.574 46.726l36.578-15.111zm26.955 12.368L28.32 40.441l17.832 6.284z"/>
   <path fill="url(#c)" stroke-width=".265" d="m58.971 138.877 4.138-5.876 6.295 12.908z" transform="translate(-23.253 -99.183)"/>
   <path fill="url(#d)" stroke-width=".265" d="m23.826 145.909 25.626-15.177 10.952.065z" transform="translate(-23.253 -99.183)"/>
   <path fill="url(#e)" stroke-width=".265" d="m60.693 128.047-22.112-12.39 5.744-2.213z" transform="translate(-23.253 -99.183)"/>

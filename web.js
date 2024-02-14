@@ -44,7 +44,8 @@ class Web {
         app.set('view engine', 'ejs');
         app.set('view options', VIEWOPTIONS);
 
-        function sendError(res, status, description) {
+        function sendError(req, res, status, description) {
+            console.log(`${status} (${description}): ${req.url} requested by ${req.ip} "${req.headers['user-agent']}"`);
             res.render('error',
                 {
                     inliner,
@@ -90,7 +91,7 @@ class Web {
                     }
                     else {
                         console.error(err);
-                        sendError(res, 500, 'Something went wrong. Try again later.');
+                        sendError(req, res, 500, 'Something went wrong. Try again later.');
                     }
                 }
             );
@@ -125,7 +126,7 @@ class Web {
                 );
             }
             else {
-                sendError(res, 404, 'File not found');
+                sendError(req, res, 404, 'File not found');
             }
         });
 
@@ -180,13 +181,16 @@ class Web {
                 res.end(await register.metrics());
             }
             catch (ex) {
-                res.status(500).send(ex);
+                console.error(err);
+                res.status(500).send('something went wrong.');
             }
         });
 
         app.use('/assets/', express.static('assets', {
             maxAge: '30d'
         }));
+
+        app.use((req, res) => sendError(req, res, 404, 'File not found'));
 
         this._webserver = app.listen(port, () => console.log(`artix-packy-notifier-web running on port ${port}`));
     }

@@ -16,6 +16,17 @@ create `config/config.json`:
 | port | What port to run the webserver on (defaults to 8080) |
 | savePath | Location of auxiliary save data (defaults to `config/data.db`) |
 | db | Location of the SQLite DB (defaults to `config/packages.db`) |
+| irc-framework | The options to feed into [irc-framework](https://github.com/kiwiirc/irc-framework/blob/master/docs/clientapi.md) |
+| ircClient | Auxilary config data for the IRC bot. For now, it takes `ircClient.channel` and optionally `ircClient.channel_key` |
+
+Note that the IRC bot needs to be exempt from excess flooding. The following command permanently voices a bot on Libera.chat:
+```
+/msg ChanServ FLAGS #example artix-update-bot +V
+```
+If the channel is intended only for the bot to broadcast, consider setting the channel mode to "moderated":
+```
+/mode +m #example
+```
 
 ## How to run
 
@@ -25,6 +36,8 @@ node index.js
 ```
 
 ## Docker Setup
+
+Image : `registry.gitlab.com/sanin.dev/artix-packy-notifier`
 
 mount a folder to `/usr/notifier/config`.
 

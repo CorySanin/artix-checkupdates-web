@@ -6,6 +6,7 @@ const dayjs = require('dayjs');
 const json5 = require('json5');
 const phin = require('phin');
 const DB = require('./db');
+const IRCBot = require('./ircbot');
 const Web = require('./web');
 const fsp = fs.promises;
 
@@ -23,6 +24,7 @@ let saveData = {
 }
 
 let cronjob;
+let ircBot;
 
 let savePath = process.env.SAVEPATH || path.join(__dirname, 'config', 'data.json');
 
@@ -50,7 +52,15 @@ fs.readFile(process.env.CONFIGPATH || path.join(__dirname, 'config', 'config.jso
             main(config, db);
         });
 
-        process.on('SIGTERM', (new Web(db, config, saveData)).close);
+        const web = new Web(db, config, saveData);
+        ircBot = new IRCBot(config);
+        ircBot.connect();
+
+        process.on('SIGTERM', () => {
+            cronjob.stop();
+            web.close();
+            ircBot.clouse();
+        });
     }
 });
 
@@ -59,9 +69,11 @@ async function main(config, db) {
     cronjob.stop();
     let now = dayjs();
     if (!('last-sync' in saveData) || !saveData['last-sync'] || dayjs(saveData['last-sync']).isBefore(now.subtract(3, 'days'))) {
+        ircBot.close();
         await updateMaintainers(config, db);
         saveData['last-sync'] = now.toJSON();
         await writeSaveData();
+        await ircBot.connect();
     }
     await checkupdates(config, db);
     await writeSaveData();
@@ -90,13 +102,17 @@ async function handleUpdates(config, db, packs, type) {
     });
 
     for (let i = 0; i < config.maintainers.length; i++) {
-        let m = config.maintainers[i];
+        const m = config.maintainers[i];
+        const mname = typeof m === 'object' ? m.name : m;
+        const ircName = typeof m === 'object' ? (m.ircName || mname) : m;
+        const packages = db.getNewByMaintainer(mname, type);
         if (typeof m === 'object') {
             notify({
                 api: config.apprise,
                 urls: m.channels
-            }, db.getNewByMaintainer(m.name, type), NICETYPES[type])
+            }, packages, NICETYPES[type])
         }
+        ircNotify(packages, ircName, NICETYPES[type]);
     }
 
     db.decrementFlags(type);
@@ -153,9 +169,10 @@ function getMaintainersPackages(maintainer) {
 }
 
 async function notify(apprise, packarr, type) {
-    if (!(packarr && packarr.length)) {
+    if (!(packarr && packarr.length && apprise && apprise.api && apprise.urls)) {
         return;
     }
+    const packagesStr = packarr.map(p => p.package).join('\n');
     for (let i = 0; i < 25; i++) {
         try {
             return await phin({
@@ -163,13 +180,30 @@ async function notify(apprise, packarr, type) {
                 method: 'POST',
                 data: {
                     title: `${packarr[0].maintainer}: packages ready to ${type}`,
-                    body: packarr.map(p => p.package).join('\n'),
+                    body: packagesStr,
                     urls: apprise.urls.join(',')
                 }
             });
         }
         catch (ex) {
             console.error('Failed to send notification, attempt #%d', i + 1);
+            console.error(ex);
+        }
+    }
+    return null;
+}
+
+function ircNotify(packarr, maintainer, type) {
+    if (!(packarr && packarr.length)) {
+        return;
+    }
+    const packagesStr = packarr.map(p => p.package).join('\n');
+    for (let i = 0; i < 25; i++) {
+        try {
+            return ircBot.sendMessage(`${maintainer}: packages ready to ${type}\n${packagesStr}\n-------- EOF --------`);
+        }
+        catch (ex) {
+            console.error('Failed to send IRC notification, attempt #%d', i + 1);
             console.error(ex);
         }
     }
