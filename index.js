@@ -68,7 +68,7 @@ async function main(config, db) {
     console.log('Starting scheduled task');
     cronjob.stop();
     let now = dayjs();
-    if (!('last-sync' in saveData) || !saveData['last-sync'] || dayjs(saveData['last-sync']).isBefore(now.subtract(3, 'days'))) {
+    if (!('last-sync' in saveData) || !saveData['last-sync'] || dayjs(saveData['last-sync']).isBefore(now.subtract(process.env.SYNCFREQ || config.syncfreq || 2, 'days'))) {
         ircBot.close();
         await updateMaintainers(config, db);
         saveData['last-sync'] = now.toJSON();

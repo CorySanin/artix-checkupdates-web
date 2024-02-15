@@ -13,6 +13,7 @@ create `config/config.json`:
 | apprise | The URL of the Apprise instance for sending notifications |
 | maintainers | Array of maintainer names as strings or objects containing the `name` of the maintainer and a list of `channels` to send notifications to |
 | cron | The cron schedule for when the application should check for pending operations via [artix-checkupdates](https://gitea.artixlinux.org/artix/artix-checkupdates) |
+| syncfreq | How often (in days) should the application sync package ownership from Gitea |
 | port | What port to run the webserver on (defaults to 8080) |
 | savePath | Location of auxiliary save data (defaults to `config/data.db`) |
 | db | Location of the SQLite DB (defaults to `config/packages.db`) |
