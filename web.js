@@ -1,5 +1,6 @@
 const express = require('express');
 const prom = require('prom-client');
+const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
@@ -31,6 +32,65 @@ function prepPackages(arr, action) {
             url: packageUrl(m)
         }
     });
+}
+
+async function createOutlinedText(string, meta, gravity = 'west') {
+    const txt = sharp({
+        create: {
+            width: meta.width,
+            height: meta.height,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 0 }
+        }
+    }).composite([
+        {
+            input: {
+                text: {
+                    text: string,
+                    font: 'Visitor TT2 BRK',
+                    fontfile: path.join(PROJECT_ROOT, 'userbar', 'visitor', 'visitor2.ttf'),
+                    width: meta.width,
+                    dpi: 109,
+                    rgba: true
+                }
+            },
+            gravity
+        }
+    ]);
+
+    const outline = await txt.clone().png().toBuffer();
+
+    const mult = gravity === 'east' ? -1 : 1;
+
+    const layers = [
+        {
+            input: (outline),
+            top: 1 * mult,
+            left: 0
+        },
+        {
+            input: (outline),
+            top: 0,
+            left: 1 * mult
+        },
+        {
+            input: (outline),
+            top: 1 * mult,
+            left: 2 * mult
+        },
+        {
+            input: (outline),
+            top: 2 * mult,
+            left: 1 * mult
+        },
+        {
+            input: (await txt.clone().linear(0, 255).png().toBuffer()),
+            top: 1 * mult,
+            left: 1 * mult
+        }
+    ];
+
+    return txt.composite(layers);
 }
 
 class Web {
@@ -124,6 +184,38 @@ class Web {
                         }
                     }
                 );
+            }
+            else {
+                sendError(req, res, 404, 'File not found');
+            }
+        });
+
+        app.get('/userbar/:maintainer.png', async (req, res) => {
+            const maintainer = req.params.maintainer;
+            const packagesOwned = db.getMaintainerPackageCount(maintainer);
+            if (packagesOwned > 0) {
+                const img = sharp(path.join(PROJECT_ROOT, 'userbar', 'userbar.png'));
+                const meta = await img.metadata();
+
+                const layers = [
+                    {
+                        input: (await (await createOutlinedText('Artix Maintainer', meta)).png().toBuffer()),
+                        top: 1,
+                        left: 55
+                    },
+                    {
+                        input: (await (await createOutlinedText(`${packagesOwned} packages`, meta, 'east')).png().toBuffer()),
+                        top: 3,
+                        left: -12
+                    }
+                ];
+
+                res.set('Content-Type', 'image/png')
+                    .set('Cache-Control', 'public, max-age=172800')
+                    .send(await img.composite(layers).png({
+                        quality: 90,
+                        compressionLevel: 3
+                    }).toBuffer());
             }
             else {
                 sendError(req, res, 404, 'File not found');
