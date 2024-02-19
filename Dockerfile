@@ -1,4 +1,4 @@
-FROM artixlinux/artixlinux:devel as build-env
+FROM artixlinux/artixlinux:base-devel as build-env
 
 WORKDIR /usr/notifier
 
@@ -14,7 +14,7 @@ RUN npm run-script build && \
   npm ci --only=production
 
 
-FROM artixlinux/artixlinux:devel as deploy
+FROM artixlinux/artixlinux:base-devel as deploy
 
 VOLUME /usr/notifier/config
 WORKDIR /usr/notifier

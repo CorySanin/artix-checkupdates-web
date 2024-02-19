@@ -59,7 +59,7 @@ fs.readFile(process.env.CONFIGPATH || path.join(__dirname, 'config', 'config.jso
         process.on('SIGTERM', () => {
             cronjob.stop();
             web.close();
-            ircBot.clouse();
+            ircBot.close();
         });
     }
 });
