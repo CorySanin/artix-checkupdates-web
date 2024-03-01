@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const spawn = require('child_process').spawn;
 const cron = require('node-cron');
 const dayjs = require('dayjs');
@@ -12,6 +13,7 @@ const fsp = fs.promises;
 
 const TIMEOUT = 180000;
 const EXTRASPACE = new RegExp('\\s+', 'g');
+const CHECKUPDATESCACHE = path.join(os.homedir(), '.cache', 'artix-checkupdates');
 const NICETYPES = {
     move: 'move',
     udate: 'update'
@@ -91,8 +93,13 @@ async function writeSaveData() {
 }
 
 async function checkupdates(config, db) {
-    await handleUpdates(config, db, saveData.move = await execCheckUpdates(['-m']), 'move');
-    await handleUpdates(config, db, saveData.update = await execCheckUpdates(['-u']), 'udate');
+    try {
+        await handleUpdates(config, db, saveData.move = await execCheckUpdates(['-m']), 'move');
+        await handleUpdates(config, db, saveData.update = await execCheckUpdates(['-u']), 'udate');
+    }
+    catch (ex) {
+        console.error('Failed to check for updates:', ex);
+    }
 }
 
 async function handleUpdates(config, db, packs, type) {
@@ -222,27 +229,40 @@ function parseCheckUpdatesOutput(output) {
     return packages;
 }
 
-function execCheckUpdates(flags) {
+async function cleanUpLockfiles() {
+    try {
+        await fsp.rm(CHECKUPDATESCACHE, { recursive: true, force: true });
+    }
+    catch(ex) {
+        console.error('Failed to remove the artix-checkupdates cache directory:', ex);
+    }
+}
+
+function execCheckUpdates(flags, errCallback) {
     return new Promise((resolve, reject) => {
         let process = spawn('artix-checkupdates', flags);
-        let timeout = setTimeout(() => {
+        let timeout = setTimeout(async () => {
+            process.kill() && await cleanUpLockfiles();
             reject('Timed out');
-            process.kill();
         }, TIMEOUT);
         let outputstr = '';
+        let errorOutput = '';
         process.stdout.on('data', data => {
             outputstr += data.toString();
         });
         process.stderr.on('data', err => {
-            console.error(err.toString());
+            const errstr = err.toString();
+            errorOutput += `${errstr}, `;
+            console.error(errstr);
         })
         process.on('exit', async (code) => {
-            if (code === 0) {
+            if (code === 0 && errorOutput.length === 0) {
                 clearTimeout(timeout);
                 resolve(parseCheckUpdatesOutput(outputstr));
             }
             else {
-                reject(code);
+                errorOutput.includes('unable to lock database') && cleanUpLockfiles();
+                reject((code && `exited with ${code}`) || errorOutput);
             }
         });
     });
