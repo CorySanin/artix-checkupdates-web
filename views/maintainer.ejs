@@ -3,10 +3,17 @@
 <body>
     <%- include("header", locals) %>
     <div class="container bg">
+        <% if (maintainer === 'orphan') { %>
+        <h1>Orphaned Packages with Pending Operations</h1>
+        <p>
+            There are <a href="https://gitea.artixlinux.org/explore/repos?q=maintainer-<%= maintainer %>&topic=1"><%= packagesOwned %> packages</a> without a maintainer.
+        </p>
+        <% } else { %>
         <h1><%= maintainer %>'s Operations</h1>
         <p>
             <%= maintainer %> owns <a href="https://gitea.artixlinux.org/explore/repos?q=maintainer-<%= maintainer %>&topic=1"><%= packagesOwned %> packages</a>.
         </p>
+        <% } %>
         <table>
             <tr>
                 <th>Package</th>

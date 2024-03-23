@@ -61,7 +61,7 @@ class IRCBot {
     }
 
     close() {
-        if (this._bot.connected) {
+        if (this._enabled && this._bot.connected) {
             this._bot.quit('Shutting down');
         }
     }

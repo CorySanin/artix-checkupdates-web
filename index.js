@@ -12,6 +12,10 @@ const Web = require('./web');
 const fsp = fs.promises;
 
 const TIMEOUT = 180000;
+const ORPHAN = {
+    "name": "orphan",
+    "ircName": "orphaned"
+};
 const EXTRASPACE = new RegExp('\\s+', 'g');
 const CHECKUPDATESCACHE = path.join(os.homedir(), '.cache', 'artix-checkupdates');
 const NICETYPES = {
@@ -25,8 +29,8 @@ let saveData = {
     update: []
 }
 
-let cronjob;
 let ircBot;
+let locked = false;
 
 let savePath = process.env.SAVEPATH || path.join(__dirname, 'config', 'data.json');
 
@@ -36,6 +40,7 @@ fs.readFile(process.env.CONFIGPATH || path.join(__dirname, 'config', 'config.jso
         process.exit(1);
     }
     else {
+        console.log('Written by Cory Sanin for Artix Linux');
         const config = json5.parse(data);
         savePath = config.savePath || savePath;
         const db = new DB(process.env.DBPATH || config.db || path.join(__dirname, 'config', 'packages.db'));
@@ -50,7 +55,7 @@ fs.readFile(process.env.CONFIGPATH || path.join(__dirname, 'config', 'config.jso
         // resetting flags in case of improper shutdown
         db.restoreFlags();
 
-        cronjob = cron.schedule(process.env.CRON || config.cron || '*/30 * * * *', () => {
+        let cronjob = cron.schedule(process.env.CRON || config.cron || '*/30 * * * *', () => {
             main(config, db);
         });
 
@@ -67,8 +72,11 @@ fs.readFile(process.env.CONFIGPATH || path.join(__dirname, 'config', 'config.jso
 });
 
 async function main(config, db) {
+    if (locked) {
+        return
+    }
+    locked = true;
     console.log('Starting scheduled task');
-    cronjob.stop();
     let now = dayjs();
     if (!('last-sync' in saveData) || !saveData['last-sync'] || dayjs(saveData['last-sync']).isBefore(now.subtract(process.env.SYNCFREQ || config.syncfreq || 2, 'days'))) {
         ircBot.close();
@@ -79,7 +87,7 @@ async function main(config, db) {
     }
     await checkupdates(config, db);
     await writeSaveData();
-    cronjob.start();
+    locked = false;
     console.log('Task complete.');
 }
 
@@ -107,13 +115,13 @@ async function handleUpdates(config, db, packs, type) {
         let p = db.getPackage(v);
         p && db.updateFlag(v, type, p[type] > 0 ? 2 : 4);
     });
-
-    for (let i = 0; i < config.maintainers.length; i++) {
-        const m = config.maintainers[i];
+    const maintainers = [...config.maintainers, ORPHAN];
+    for (let i = 0; i < maintainers.length; i++) {
+        const m = maintainers[i];
         const mname = typeof m === 'object' ? m.name : m;
         const ircName = typeof m === 'object' ? (m.ircName || mname) : m;
         const packages = db.getNewByMaintainer(mname, type);
-        if (typeof m === 'object') {
+        if (typeof m === 'object' && m.channels) {
             notify({
                 api: config.apprise,
                 urls: m.channels
@@ -129,15 +137,20 @@ async function handleUpdates(config, db, packs, type) {
 async function updateMaintainers(config, db) {
     console.log('Syncing packages...');
     const lastseen = (new Date()).getTime();
-    const maintainers = config.maintainers;
-    for (let i = 0; maintainers && i < maintainers.length; i++) {
+    const maintainers = [...(config.maintainers || []), ORPHAN];
+    for (let i = 0; i < maintainers.length; i++) {
         let maintainer = maintainers[i];
         if (typeof maintainer === 'object') {
             maintainer = maintainer.name;
         }
         console.log(`Syncing ${maintainer}...`);
         try {
-            (await getMaintainersPackages(maintainer)).forEach(package => db.updatePackage(package, maintainer, lastseen));
+            const packages = await getMaintainersPackages(maintainer);
+            for (let j = 0; j < packages.length; j++) {
+                const package = packages[j];
+                db.updatePackage(package, maintainer, lastseen);
+                await asyncSleep(50);
+            }
         }
         catch (err) {
             console.error(`Failed to get packages for ${maintainer}`);
@@ -151,7 +164,7 @@ async function updateMaintainers(config, db) {
 
 function getMaintainersPackages(maintainer) {
     return new Promise((resolve, reject) => {
-        let process = spawn('artixpkg', ['admin', 'query', '-m', maintainer]);
+        let process = spawn('artixpkg', ['admin', 'query', maintainer === ORPHAN.name ? '-t' : '-m', maintainer]);
         let timeout = setTimeout(() => {
             reject('Timed out');
             process.kill();
@@ -233,7 +246,7 @@ async function cleanUpLockfiles() {
     try {
         await fsp.rm(CHECKUPDATESCACHE, { recursive: true, force: true });
     }
-    catch(ex) {
+    catch (ex) {
         console.error('Failed to remove the artix-checkupdates cache directory:', ex);
     }
 }
@@ -265,5 +278,11 @@ function execCheckUpdates(flags, errCallback) {
                 reject((code && `exited with ${code}`) || errorOutput);
             }
         });
+    });
+}
+
+function asyncSleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
     });
 }

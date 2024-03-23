@@ -98,7 +98,7 @@ class Web {
         const app = express();
         const port = process.env.PORT || options.port || 8080;
         const METRICPREFIX = process.env.METRICPREFIX || 'artixpackages_';
-        const maintainers = this._maintainers = options.maintainers.map(m => typeof m === 'object' ? m.name : m).sort();
+        const maintainers = this._maintainers = (options.maintainers || []).map(m => typeof m === 'object' ? m.name : m).sort();
 
         app.set('trust proxy', 1);
         app.set('view engine', 'ejs');
@@ -224,6 +224,18 @@ class Web {
 
         app.get('/robots.txt', (_, res) => {
             res.set('content-type', 'text/plain').send('User-agent: *\nDisallow: /metrics\n');
+        });
+
+        app.get('/api/1.0/maintainers', (req, res) => {
+            const acceptHeader = req.headers.accept;
+            if (acceptHeader && acceptHeader.includes('application/json')) {
+                res.json({
+                    maintainers
+                });
+            }
+            else {
+                res.send(maintainers.join(' '));
+            }
         });
 
         const register = prom.register;
