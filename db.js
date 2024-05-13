@@ -13,6 +13,8 @@ class DB {
         this._queries = {
             GETPACKAGE: db.prepare(`SELECT * FROM ${TABLE} WHERE package = @package;`),
             ADDPACKAGE: db.prepare(`INSERT INTO ${TABLE} (package,maintainer,move,udate,lastseen) VALUES (@package, @maintainer, 0, 0, @lastseen);`),
+            GETPACKAGES: db.prepare(`SELECT package FROM ${TABLE}`),
+            GETPACKAGESSTARTWITH: db.prepare(`SELECT package FROM ${TABLE} WHERE package LIKE @startsWith || '%'`),
             UPDATEMAINTAINER: db.prepare(`UPDATE ${TABLE} SET maintainer = @maintainer, lastseen= @lastseen WHERE package = @package`),
             GETMAINTAINERPACKAGECOUNT: db.prepare(`SELECT COUNT(package) as count FROM ${TABLE} WHERE maintainer = @maintainer;`),
             REMOVEOLDPACKAGE: db.prepare(`DELETE FROM ${TABLE} WHERE lastseen < @lastseen;`),
@@ -48,6 +50,11 @@ class DB {
         return this._queries.GETPACKAGE.get({
             package: pack
         });
+    }
+
+    getPackages(startsWith = null) {
+        return ((!!startsWith) ? this._queries.GETPACKAGESSTARTWITH.all({ startsWith }) :
+            this._queries.GETPACKAGES.all()).map(p => p.package);
     }
 
     updatePackage(pack, maintainer, lastseen) {

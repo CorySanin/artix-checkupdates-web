@@ -238,6 +238,21 @@ class Web {
             }
         });
 
+        app.get('/api/1.0/packages', (req, res) => {
+            const acceptHeader = req.headers.accept;
+            const startsWith = req.query.startswith;
+            const packages = db.getPackages(startsWith);
+            res.set('Cache-Control', 'public, max-age=360');
+            if (acceptHeader && acceptHeader.includes('application/json')) {
+                res.json({
+                    packages
+                });
+            }
+            else {
+                res.send(packages.join(' '));
+            }
+        });
+
         const register = prom.register;
 
         new prom.Gauge({

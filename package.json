@@ -1,6 +1,6 @@
 {
   "name": "artix-packy-notifier",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "Determine packages that need attention",
   "main": "index.js",
   "scripts": {
@@ -23,20 +23,20 @@
   },
   "homepage": "https://gitlab.com/sanin.dev/artix-packy-notifier#readme",
   "dependencies": {
-    "better-sqlite3": "9.4.3",
-    "dayjs": "1.11.10",
-    "ejs": "3.1.9",
-    "express": "4.19.1",
+    "better-sqlite3": "9.6.0",
+    "dayjs": "1.11.11",
+    "ejs": "3.1.10",
+    "express": "4.19.2",
     "irc-framework": "4.13.1",
     "json5": "2.2.3",
     "node-cron": "3.0.3",
-    "phin": "^3.7.0",
-    "prom-client": "15.1.0",
-    "sharp": "0.33.2"
+    "phin": "3.7.1",
+    "prom-client": "15.1.2",
+    "sharp": "0.33.3"
   },
   "devDependencies": {
     "csso": "5.0.5",
-    "sass": "1.72.0",
+    "sass": "1.75.0",
     "uglify-js": "3.17.4"
   }
 }
