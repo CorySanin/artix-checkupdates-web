@@ -228,6 +228,7 @@ class Web {
 
         app.get('/api/1.0/maintainers', (req, res) => {
             const acceptHeader = req.headers.accept;
+            res.set('Cache-Control', 'public, max-age=360');
             if (acceptHeader && acceptHeader.includes('application/json')) {
                 res.json({
                     maintainers

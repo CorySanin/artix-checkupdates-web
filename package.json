@@ -23,7 +23,7 @@
   },
   "homepage": "https://gitlab.com/sanin.dev/artix-packy-notifier#readme",
   "dependencies": {
-    "better-sqlite3": "9.6.0",
+    "better-sqlite3": "11.0.0",
     "dayjs": "1.11.11",
     "ejs": "3.1.10",
     "express": "4.19.2",
@@ -32,11 +32,11 @@
     "node-cron": "3.0.3",
     "phin": "3.7.1",
     "prom-client": "15.1.2",
-    "sharp": "0.33.3"
+    "sharp": "0.33.4"
   },
   "devDependencies": {
     "csso": "5.0.5",
-    "sass": "1.75.0",
-    "uglify-js": "3.17.4"
+    "sass": "1.77.6",
+    "uglify-js": "3.18.0"
   }
 }
