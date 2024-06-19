@@ -1,4 +1,8 @@
-FROM artixlinux/artixlinux:base-devel as build-env
+FROM artixlinux/artixlinux:base-devel as baseimg
+
+RUN pacman -Syu --noconfirm
+
+FROM baseimg as build-env
 
 WORKDIR /usr/notifier
 
@@ -14,7 +18,7 @@ RUN npm run-script build && \
   npm ci --only=production
 
 
-FROM artixlinux/artixlinux:base-devel as deploy
+FROM baseimg as deploy
 
 VOLUME /usr/notifier/config
 WORKDIR /usr/notifier
