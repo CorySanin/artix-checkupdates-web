@@ -21,7 +21,6 @@ services:
       container_name: artix-notifier-irc
       build:
          context: ./
-      restart: always
       volumes:
          - ./config:/usr/notifier/config
       environment:

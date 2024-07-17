@@ -347,7 +347,7 @@ class Web {
         readSave();
 
         this._webserver = app.listen(port, () => console.log(`artix-packy-notifier-web running on port ${port}`));
-        this._privateserver = app.listen(privateport);
+        this._privateserver = privateapp.listen(privateport);
     }
 
     close = () => {

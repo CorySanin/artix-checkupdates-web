@@ -249,10 +249,10 @@ class Daemon {
     }
 
     ircNotify = async (packarr, maintainer, type) => {
-        if (!(packarr && packarr.length)) {
+        const config = this._config;
+        if (!(packarr && packarr.length && config['irc-framework'])) {
             return;
         }
-        const config = this._config;
         const hostname = process.env.IRCHOSTNAME || config.irchostname || 'http://artix-notifier-irc:8081';
         const packagesStr = packarr.map(p => p.package).join('\n');
         for (let i = 0; i < 25; i++) {
