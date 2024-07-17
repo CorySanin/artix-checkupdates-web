@@ -5,6 +5,7 @@ class DB {
     constructor(file) {
         this._db = new sqlite(file);
         const db = this._db;
+        db.pragma('journal_mode = WAL');
 
         if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${TABLE}';`).get()) {
             db.prepare(`CREATE TABLE ${TABLE} (package VARCHAR(128) PRIMARY KEY, maintainer VARCHAR(128), move INTEGER, udate INTEGER, lastseen DATETIME);`).run();
