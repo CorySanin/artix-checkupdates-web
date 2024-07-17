@@ -1,7 +1,34 @@
 version: '2'
 
 services:
-   packy:
+   artix-notifier-daemon:
+      container_name: artix-notifier-daemon
+      build:
+         context: ./
+      volumes:
+         - ./config:/usr/notifier/config
+      depends_on:
+         - artix-notifier-irc
+         - artix-notifier-web
+      environment:
+         COMPONENT: "daemon"
+         ARTIX_MIRROR: "https://mirrors.qontinuum.space/artixlinux/%s/os/x86_64"
+         ARCH_MIRROR: "https://mirrors.qontinuum.space/archlinux/%s/os/x86_64"
+         ARTIX_REPOS: "system-goblins,world-goblins,system-gremlins,world-gremlins,system,world"
+         ARCH_REPOS: "core-staging,extra-staging,core-testing,extra-testing,core,extra"
+
+   artix-notifier-irc:
+      container_name: artix-notifier-irc
+      build:
+         context: ./
+      restart: always
+      volumes:
+         - ./config:/usr/notifier/config
+      environment:
+         COMPONENT: "ircbot"
+
+   artix-notifier-web:
+      container_name: artix-notifier-web
       build:
          context: ./
       volumes:
@@ -9,7 +36,4 @@ services:
       ports:
          - 8080:8080
       environment:
-         ARTIX_MIRROR: "https://mirrors.qontinuum.space/artixlinux/%s/os/x86_64"
-         ARCH_MIRROR: "https://mirrors.qontinuum.space/archlinux/%s/os/x86_64"
-         ARTIX_REPOS: "system-goblins,world-goblins,system-gremlins,world-gremlins,system,world"
-         ARCH_REPOS: "core-staging,extra-staging,core-testing,extra-testing,core,extra"
+         COMPONENT: "web"

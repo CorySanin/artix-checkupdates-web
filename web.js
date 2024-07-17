@@ -3,6 +3,8 @@ const prom = require('prom-client');
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
+const DB = require('./db');
+const fsp = fs.promises;
 
 const PROJECT_ROOT = __dirname;
 const VIEWOPTIONS = {
@@ -94,11 +96,19 @@ async function createOutlinedText(string, meta, gravity = 'west') {
 }
 
 class Web {
-    constructor(db, options, savedata) {
+    constructor(options) {
+        const db = new DB(process.env.DBPATH || options.db || path.join(__dirname, 'config', 'packages.db'));
         const app = express();
+        const privateapp = express();
         const port = process.env.PORT || options.port || 8080;
+        const privateport = process.env.PRIVATEPORT || options.privateport || 8081;
         const METRICPREFIX = process.env.METRICPREFIX || 'artixpackages_';
         const maintainers = this._maintainers = (options.maintainers || []).map(m => typeof m === 'object' ? m.name : m).sort();
+        const savePath = process.env.SAVEPATH || options.savePath || path.join(__dirname, 'config', 'data.json');
+        let saveData = {
+            move: [],
+            update: []
+        };
 
         app.set('trust proxy', 1);
         app.set('view engine', 'ejs');
@@ -128,13 +138,17 @@ class Web {
             );
         }
 
+        async function readSave() {
+            saveData = JSON.parse(await fsp.readFile(savePath));
+        }
+
         app.get('/healthcheck', async (_, res) => {
             res.send('Healthy');
         });
 
         app.get('/', async (_, res) => {
-            let packages = prepPackages(savedata.move, 'Move');
-            packages = packages.concat(prepPackages(savedata.update, 'Update'));
+            let packages = prepPackages(saveData.move, 'Move');
+            packages = packages.concat(prepPackages(saveData.update, 'Update'));
             res.render('index',
                 {
                     inliner,
@@ -254,6 +268,22 @@ class Web {
             }
         });
 
+        privateapp.put('/api/1.0/data', (req, res) => {
+            try {
+                readSave();
+                res.json({
+                    success: true
+                });
+            }
+            catch(ex) {
+                console.error(ex);
+                res.status(500).json({
+                    success: false,
+                    error: 'failed to read save data'
+                });
+            }
+        });
+
         const register = prom.register;
 
         new prom.Gauge({
@@ -274,11 +304,11 @@ class Web {
                 this.set({
                     maintainer: 'any',
                     action: 'move'
-                }, savedata.move.length);
+                }, saveData.move.length);
                 this.set({
                     maintainer: 'any',
                     action: 'update'
-                }, savedata.update.length);
+                }, saveData.update.length);
             }
         });
 
@@ -312,11 +342,17 @@ class Web {
 
         app.use((req, res) => sendError(req, res, 404, 'File not found'));
 
+        privateapp.use('/', app);
+
+        readSave();
+
         this._webserver = app.listen(port, () => console.log(`artix-packy-notifier-web running on port ${port}`));
+        this._privateserver = app.listen(privateport);
     }
 
     close = () => {
         this._webserver.close();
+        this._privateserver.close();
     }
 }
 

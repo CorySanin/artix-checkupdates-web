@@ -1,8 +1,8 @@
-FROM artixlinux/artixlinux:base-devel as baseimg
+FROM artixlinux/artixlinux:base-devel AS baseimg
 
 RUN pacman -Syu --noconfirm
 
-FROM baseimg as build-env
+FROM baseimg AS build-env
 
 WORKDIR /usr/notifier
 
@@ -18,12 +18,12 @@ RUN npm run-script build && \
   npm ci --only=production
 
 
-FROM baseimg as deploy
+FROM baseimg AS deploy
 
 VOLUME /usr/notifier/config
 WORKDIR /usr/notifier
 HEALTHCHECK  --timeout=15m \
-  CMD curl --fail http://localhost:8080/healthcheck || exit 1
+  CMD curl --fail http://localhost:8081/healthcheck || exit 1
 
 EXPOSE 8080
 
@@ -42,8 +42,8 @@ RUN mkdir -p ./config /home/artix/.config/artix-checkupdates \
 
 USER artix
 
-ENV ARTIX_MIRROR="https://mirrors.qontinuum.space/artixlinux/%s/os/x86_64"
-ENV ARCH_MIRROR="https://mirrors.qontinuum.space/archlinux/%s/os/x86_64"
+ENV ARTIX_MIRROR="https://mirror.sanin.dev/artix-linux/%s/os/x86_64/"
+ENV ARCH_MIRROR="https://mirror.sanin.dev/arch-linux/%s/os/x86_64/"
 ENV ARTIX_REPOS="system-goblins,world-goblins,galaxy-goblins,lib32-goblins,system-gremlins,world-gremlins,galaxy-gremlins,lib32-gremlins,system,world,galaxy,lib32"
 ENV ARCH_REPOS="core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib"
 ENV GITEA_TOKEN="CHANGEME"
