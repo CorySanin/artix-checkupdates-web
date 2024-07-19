@@ -26,7 +26,7 @@ class DB {
                 INCREMENT: db.prepare(`UPDATE ${TABLE} SET move = move + 1 WHERE package = @package`),
                 DECREMENT: db.prepare(`UPDATE ${TABLE} SET move = 0 WHERE move = 1`),
                 FIXFLAG: db.prepare(`UPDATE ${TABLE} SET move = 1 WHERE move > 1`),
-                GETPACKAGESBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND move > 0;`),
+                GETPACKAGESBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND move > 0 ORDER BY package ASC;`),
                 GETPACKAGECOUNTBYMAINTAINER: db.prepare(`SELECT COUNT(package) as count FROM ${TABLE} WHERE maintainer = @maintainer AND move > 0;`)
             },
             udate: {
@@ -36,7 +36,7 @@ class DB {
                 INCREMENT: db.prepare(`UPDATE ${TABLE} SET udate = udate + 1 WHERE package = @package`),
                 DECREMENT: db.prepare(`UPDATE ${TABLE} SET udate = 0 WHERE udate = 1`),
                 FIXFLAG: db.prepare(`UPDATE ${TABLE} SET udate = 1 WHERE udate > 1`),
-                GETPACKAGESBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND udate > 0;`),
+                GETPACKAGESBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND udate > 0 ORDER BY package ASC;`),
                 GETPACKAGECOUNTBYMAINTAINER: db.prepare(`SELECT COUNT(package) as count FROM ${TABLE} WHERE maintainer = @maintainer AND udate > 0;`)
             }
         };

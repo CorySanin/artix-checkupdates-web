@@ -21,12 +21,6 @@ const NICETYPES = {
     udate: 'update'
 }
 
-function asyncSleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-}
-
 class Daemon {
 
     constructor(config) {
@@ -104,7 +98,6 @@ class Daemon {
                 const packages = await this.getMaintainersPackages(maintainer);
                 for (let j = 0; j < packages.length; j++) {
                     db.updatePackage(packages[j], maintainer, lastseen);
-                    await asyncSleep(50); //maybe not needed anymore?
                 }
             }
             catch (err) {
