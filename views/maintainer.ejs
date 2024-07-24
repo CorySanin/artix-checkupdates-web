@@ -14,6 +14,9 @@
             <%= maintainer %> owns <a href="https://gitea.artixlinux.org/explore/repos?q=maintainer-<%= maintainer %>&topic=1"><%= packagesOwned %> packages</a>.
         </p>
         <% } %>
+        <p>
+            <%= (packages && packages.length) || 0 %> of which require attention.
+        </p>
         <table>
             <tr>
                 <th>Package</th>
