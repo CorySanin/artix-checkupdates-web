@@ -10,20 +10,14 @@ const PROJECT_ROOT = __dirname;
 const VIEWOPTIONS = {
     outputFunctionName: 'echo'
 };
-const NAMECOMPLIANCE = [
-    p => p.replace(/([a-zA-Z0-9]+)\+([a-zA-Z]+)/g, '$1-$2'),
-    p => p.replace(/\+/g, "plus"),
-    p => p.replace(/[^a-zA-Z0-9_\-\.]/g, "-"),
-    p => p.replace(/[_\-]{2,}/g, "-")
-]
 
 function inliner(file) {
     return fs.readFileSync(path.join(PROJECT_ROOT, file));
 }
 
 function packageUrl(p) {
-    let packagename = typeof p === 'string' ? p : p.package;
-    return `https://gitea.artixlinux.org/packages/${NAMECOMPLIANCE.reduce((s, fn) => fn(s), packagename)}`;
+    const packagename = typeof p === 'string' ? p : p.package;
+    return `https://gitea.artixlinux.org/packages/${packagename}`;
 }
 
 function prepPackages(arr, action) {

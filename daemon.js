@@ -20,6 +20,12 @@ const NICETYPES = {
     move: 'move',
     udate: 'update'
 }
+const NAMECOMPLIANCE = [
+    p => p.replace(/([a-zA-Z0-9]+)\+([a-zA-Z]+)/g, '$1-$2'),
+    p => p.replace(/\+/g, "plus"),
+    p => p.replace(/[^a-zA-Z0-9_\-\.]/g, "-"),
+    p => p.replace(/[_\-]{2,}/g, "-")
+]
 
 class Daemon {
 
@@ -185,7 +191,7 @@ class Daemon {
             // "package" is "reserved"
             const reservethis = l.trim().replace(EXTRASPACE, ' ');
             if (reservethis.length > 0 && reservethis.indexOf('Package basename') < 0) {
-                packages.push(reservethis.split(' ', 2)[0]);
+                packages.push(NAMECOMPLIANCE.reduce((s, fn) => fn(s), reservethis.split(' ', 2)[0]));
             }
         });
         return packages;
