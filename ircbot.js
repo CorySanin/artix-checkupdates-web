@@ -21,6 +21,7 @@ class IRCBot {
             }
             else {
                 res.status(500).send('offline');
+                process.exit(1);
             }
         });
 
