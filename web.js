@@ -1,4 +1,5 @@
 const express = require('express');
+const exuseragent = require('express-useragent');
 const prom = require('prom-client');
 const sharp = require('sharp');
 const fs = require('fs');
@@ -108,8 +109,14 @@ class Web {
         app.set('view engine', 'ejs');
         app.set('view options', VIEWOPTIONS);
 
+        app.use(exuseragent.express());
+
         function sendError(req, res, status, description) {
             console.log(`${status} (${description}): ${req.url} requested by ${req.ip} "${req.headers['user-agent']}"`);
+            if (req.useragent.browser === 'curl') {
+                res.send('404: not found\n');
+                return;
+            }
             res.render('error',
                 {
                     inliner,
@@ -136,13 +143,23 @@ class Web {
             saveData = JSON.parse(await fsp.readFile(savePath));
         }
 
+        function renderForCurl(packages) {
+            const colHeader = 'Package basename';
+            const tabSize = packages.reduce((acc, cur) => Math.max(acc, cur.package.length), colHeader.length) + 4;
+            return `${colHeader.padEnd(tabSize, ' ')}Action\n${packages.map(p => `${p.package.padEnd(tabSize, ' ')}${p.action}`).join('\n')}\n`;
+        }
+
         app.get('/healthcheck', async (_, res) => {
             res.send('Healthy');
         });
 
-        app.get('/', async (_, res) => {
+        app.get('/', async (req, res) => {
             let packages = prepPackages(saveData.move, 'Move');
             packages = packages.concat(prepPackages(saveData.update, 'Update'));
+            if (req.useragent.browser === 'curl') {
+                res.send(renderForCurl(packages));
+                return;
+            }
             res.render('index',
                 {
                     inliner,
@@ -171,6 +188,15 @@ class Web {
             let packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move');
             packages = packages.concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
             if (packagesOwned > 0) {
+                if (req.useragent.browser === 'curl') {
+                    res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages.map(p => {
+                        return {
+                            package: p.package.package,
+                            action: p.action
+                        };
+                    }))}`);
+                    return;
+                }
                 res.render('maintainer',
                     {
                         inliner,
@@ -269,7 +295,7 @@ class Web {
                     success: true
                 });
             }
-            catch(ex) {
+            catch (ex) {
                 console.error(ex);
                 res.status(500).json({
                     success: false,
