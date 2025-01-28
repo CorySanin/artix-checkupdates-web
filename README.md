@@ -1,4 +1,4 @@
-# artix-packy-notifier
+# artix-checkupdates-web
 
 Notification system and web frontend for Artix packages with pending operations. Notifications can be sent via
 [Apprise](https://github.com/caronc/apprise/wiki#notification-services) or IRC. Web interface shows all packages with pending operations
@@ -33,7 +33,8 @@ If the channel is intended only for the bot to broadcast, consider setting the c
 
 ```
 npm install
-node index.js
+npm exec tsc
+node distribution/index.mjs
 ```
 
 ## Docker Setup

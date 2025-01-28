@@ -6,7 +6,7 @@ FROM baseimg AS build-env
 
 WORKDIR /usr/notifier
 
-RUN pacman -Sy --noconfirm nodejs npm
+RUN pacman -Sy --noconfirm nodejs npm typescript
 
 COPY package*.json ./
 
@@ -14,7 +14,8 @@ RUN npm install
 
 COPY . .
 
-RUN npm run-script build && \
+RUN tsc && \
+  npm run-script build && \
   npm ci --only=production
 
 
@@ -48,4 +49,4 @@ ENV ARTIX_REPOS="system-goblins,world-goblins,galaxy-goblins,lib32-goblins,syste
 ENV ARCH_REPOS="core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib"
 ENV GITEA_TOKEN="CHANGEME"
 
-CMD [ "node", "index.js"]
+CMD [ "node", "distribution/index.mjs"]

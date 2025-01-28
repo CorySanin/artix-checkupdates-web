@@ -1,0 +1,10 @@
+{
+  "extends": "@sindresorhus/tsconfig",
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src"
+  ]
+}

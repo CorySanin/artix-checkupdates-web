@@ -24,7 +24,7 @@
             </tr>
             <% packages && packages.forEach(p => { %>
             <tr>
-                <td><a href="<%= p.url %>"><%= p.package.package %></a></td>
+                <td><a href="<%= p.url %>"><%= p.package %></a></td>
                 <td><%= p.action %></td>
             </tr>
             <% }); %>

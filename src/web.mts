@@ -1,41 +1,60 @@
-const express = require('express');
-const exuseragent = require('express-useragent');
-const prom = require('prom-client');
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
-const DB = require('./db');
-const fsp = fs.promises;
+import fs from 'fs';
+import * as fsp from 'node:fs/promises';
+import { DB } from './db.mjs';
+import express from 'express';
+import exuseragent from 'express-useragent';
+import prom from 'prom-client';
+import sharp from 'sharp';
+import * as path from 'path';
+import type http from "http";
+import type { Request, Response } from "express";
+import type { Details } from "express-useragent";
+import type { Config } from './config.js';
+import type { PackageDBEntry } from './db.mjs';
+import type { SaveData } from './daemon.mjs';
 
-const PROJECT_ROOT = __dirname;
+const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
 const VIEWOPTIONS = {
     outputFunctionName: 'echo'
 };
 
-function inliner(file) {
+type Action = "Move" | "Update";
+
+type WebPackageObject = {
+    package: string;
+    action: Action;
+    url: string;
+}
+
+type ParseablePackage = string | PackageDBEntry;
+
+function inliner(file: string) {
     return fs.readFileSync(path.join(PROJECT_ROOT, file));
 }
 
-function packageUrl(p) {
-    const packagename = typeof p === 'string' ? p : p.package;
-    return `https://gitea.artixlinux.org/packages/${packagename}`;
+function parsePackage(p: ParseablePackage): string {
+    return typeof p === 'string' ? p : p.package;
 }
 
-function prepPackages(arr, action) {
+function packageUrl(p: ParseablePackage) {
+    return `https://gitea.artixlinux.org/packages/${parsePackage(p)}`;
+}
+
+function prepPackages(arr: ParseablePackage[], action: Action): WebPackageObject[] {
     return arr.map(m => {
         return {
-            package: m,
+            package: parsePackage(m),
             action,
             url: packageUrl(m)
         }
     });
 }
 
-async function createOutlinedText(string, meta, gravity = 'west') {
+async function createOutlinedText(string: string, meta: sharp.Metadata, gravity: sharp.Gravity = 'west') {
     const txt = sharp({
         create: {
-            width: meta.width,
-            height: meta.height,
+            width: meta.width || 0,
+            height: meta.height || 0,
             channels: 4,
             background: { r: 0, g: 0, b: 0, alpha: 0 }
         }
@@ -46,7 +65,7 @@ async function createOutlinedText(string, meta, gravity = 'west') {
                     text: string,
                     font: 'Visitor TT2 BRK',
                     fontfile: path.join(PROJECT_ROOT, 'userbar', 'visitor', 'visitor2.ttf'),
-                    width: meta.width,
+                    width: meta.width || 0,
                     dpi: 109,
                     rgba: true
                 }
@@ -91,16 +110,20 @@ async function createOutlinedText(string, meta, gravity = 'west') {
 }
 
 class Web {
-    constructor(options) {
-        const db = new DB(process.env.DBPATH || options.db || path.join(__dirname, 'config', 'packages.db'));
+    private _webserver: http.Server;
+    private _privateserver: http.Server;
+
+    constructor(options: Config) {
+        const db = new DB(process.env['DBPATH'] || options.db || path.join(PROJECT_ROOT, 'config', 'packages.db'));
         const app = express();
         const privateapp = express();
-        const port = process.env.PORT || options.port || 8080;
-        const privateport = process.env.PRIVATEPORT || options.privateport || 8081;
-        const METRICPREFIX = process.env.METRICPREFIX || 'artixpackages_';
-        const maintainers = this._maintainers = (options.maintainers || []).map(m => typeof m === 'object' ? m.name : m).sort();
-        const savePath = process.env.SAVEPATH || options.savePath || path.join(__dirname, 'config', 'data.json');
-        let saveData = {
+        const port = process.env['PORT'] || options.port || 8080;
+        const privateport = process.env['PRIVATEPORT'] || options.privateport || 8081;
+        const METRICPREFIX = process.env['METRICPREFIX'] || 'artixpackages_';
+        const maintainers = (options.maintainers || []).map(m => typeof m === 'object' ? m.name : m).sort();
+        const savePath = process.env['SAVEPATH'] || options.savePath || path.join(PROJECT_ROOT, 'config', 'data.json');
+        let saveData: SaveData = {
+            'last-sync': null,
             move: [],
             update: []
         };
@@ -111,9 +134,9 @@ class Web {
 
         app.use(exuseragent.express());
 
-        function sendError(req, res, status, description) {
+        function sendError(req: Request, res: Response, status: number, description: string) {
             console.log(`${status} (${description}): ${req.url} requested by ${req.ip} "${req.headers['user-agent']}"`);
-            if (req.useragent.browser === 'curl') {
+            if ((req.useragent as Details).browser === 'curl') {
                 res.send('404: not found\n');
                 return;
             }
@@ -140,13 +163,13 @@ class Web {
         }
 
         async function readSave() {
-            saveData = JSON.parse(await fsp.readFile(savePath));
+            saveData = JSON.parse((await fsp.readFile(savePath)).toString());
         }
 
-        function renderForCurl(packages) {
+        function renderForCurl(packages: WebPackageObject[]) {
             const colHeader = 'Package basename';
-            const tabSize = packages.reduce((acc, cur) => Math.max(acc, cur.package.length), colHeader.length) + 4;
-            return `${colHeader.padEnd(tabSize, ' ')}Action\n${packages.map(p => `${p.package.padEnd(tabSize, ' ')}${p.action}`).join('\n')}\n`;
+            const tabSize = packages.reduce((acc, cur) => Math.max(acc, cur.package?.length || 0), colHeader.length) + 4;
+            return `${colHeader.padEnd(tabSize, ' ')}Action\n${packages.map(p => `${p.package?.padEnd(tabSize, ' ')}${p.action}`).join('\n')}\n`;
         }
 
         app.get('/healthcheck', async (_, res) => {
@@ -156,7 +179,7 @@ class Web {
         app.get('/', async (req, res) => {
             let packages = prepPackages(saveData.move, 'Move');
             packages = packages.concat(prepPackages(saveData.update, 'Update'));
-            if (req.useragent.browser === 'curl') {
+            if ((req.useragent as Details).browser === 'curl') {
                 res.send(renderForCurl(packages));
                 return;
             }
@@ -188,13 +211,8 @@ class Web {
             let packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move');
             packages = packages.concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
             if (packagesOwned > 0) {
-                if (req.useragent.browser === 'curl') {
-                    res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages.map(p => {
-                        return {
-                            package: p.package.package,
-                            action: p.action
-                        };
-                    }))}`);
+                if ((req.useragent as Details).browser === 'curl') {
+                    res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages)}`);
                     return;
                 }
                 res.render('maintainer',
@@ -229,7 +247,7 @@ class Web {
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
             if (packagesOwned > 0) {
                 const img = sharp(path.join(PROJECT_ROOT, 'userbar', 'userbar.png'));
-                const meta = await img.metadata();
+                const meta: sharp.Metadata = await img.metadata();
 
                 const layers = [
                     {
@@ -275,7 +293,7 @@ class Web {
 
         app.get('/api/1.0/packages', (req, res) => {
             const acceptHeader = req.headers.accept;
-            const startsWith = req.query.startswith;
+            const startsWith = req.query['startswith'] as string;
             const packages = db.getPackages(startsWith);
             res.set('Cache-Control', 'public, max-age=360');
             if (acceptHeader && acceptHeader.includes('application/json')) {
@@ -288,7 +306,7 @@ class Web {
             }
         });
 
-        privateapp.put('/api/1.0/data', (req, res) => {
+        privateapp.put('/api/1.0/data', (_, res) => {
             try {
                 readSave();
                 res.json({
@@ -351,7 +369,7 @@ class Web {
                 res.end(await register.metrics());
             }
             catch (ex) {
-                console.error(err);
+                console.error(ex);
                 res.status(500).send('something went wrong.');
             }
         });
@@ -366,7 +384,7 @@ class Web {
 
         readSave();
 
-        this._webserver = app.listen(port, () => console.log(`artix-packy-notifier-web running on port ${port}`));
+        this._webserver = app.listen(port, () => console.log(`artix-checkupdates-web running on port ${port}`));
         this._privateserver = privateapp.listen(privateport);
     }
 
@@ -376,4 +394,5 @@ class Web {
     }
 }
 
-module.exports = Web;
+export default Web;
+export { Web };

@@ -1,31 +1,29 @@
-/**
- * Writing this myself because gulp has a billion garbage dependencies
- * and webpack sucks poop through a straw. Everyone is stupid.
- */
-const fsp = require('fs').promises;
-const path = require('path');
-const spawn = require('child_process').spawn;
-const sass = require('sass');
-const csso = require('csso');
-const uglifyjs = require("uglify-js");
+import fs from 'fs';
+import path from 'path';
+import child_process from 'child_process';
+import uglifyjs from "uglify-js";
+import * as sass from 'sass';
+import * as csso from 'csso';
 
+const spawn = child_process.spawn;
+const fsp = fs.promises;
 const STYLESDIR = 'styles';
 const SCRIPTSDIR = 'scripts';
 const IMAGESDIR = path.join('assets', 'images');
-const STYLEOUTDIR = process.env.STYLEOUTDIR || path.join(__dirname, 'assets', 'css');
-const SCRIPTSOUTDIR = process.env.SCRIPTSOUTDIR || path.join(__dirname, 'assets', 'js');
-const IMAGESOUTDIR = process.env.IMAGESOUTDIR || path.join(__dirname, 'assets', 'webp');
+const STYLEOUTDIR = process.env.STYLEOUTDIR || path.join('assets', 'css');
+const SCRIPTSOUTDIR = process.env.SCRIPTSOUTDIR || path.join('assets', 'js');
+const IMAGESOUTDIR = process.env.IMAGESOUTDIR || path.join('assets', 'webp');
 const STYLEOUTFILE = process.env.STYLEOUTFILE || 'styles.css';
 const SQUASH = new RegExp('^[0-9]+-');
 
-async function emptyDir(dir) {
+async function emptyDir(dir: string) {
     await Promise.all((await fsp.readdir(dir, { withFileTypes: true })).map(f => path.join(dir, f.name)).map(p => fsp.rm(p, {
         recursive: true,
         force: true
     })));
 }
 
-async function mkdir(dir) {
+async function mkdir(dir: string | string[]) {
     if (typeof dir === 'string') {
         await fsp.mkdir(dir, { recursive: true });
     }
@@ -37,8 +35,8 @@ async function mkdir(dir) {
 // Process styles
 async function styles() {
     await mkdir([STYLEOUTDIR, STYLESDIR]);
-    await await emptyDir(STYLEOUTDIR);
-    let styles = [];
+    await emptyDir(STYLEOUTDIR);
+    let styles: string[] = [];
     let files = await fsp.readdir(STYLESDIR);
     await Promise.all(files.map(f => new Promise(async (res, reject) => {
         let p = path.join(STYLESDIR, f);
@@ -110,7 +108,7 @@ async function images(dir = '') {
                     clearTimeout(timeout);
                     if (code === 0) {
                         console.log(`Wrote ${outfile}`);
-                        res();
+                        res(null);
                     }
                     else {
                         reject(code);
@@ -124,6 +122,10 @@ async function images(dir = '') {
     }
 }
 
+function isAbortError(err: unknown): boolean {
+    return typeof err === 'object' && err !== null && 'name' in err && err.name === 'AbortError';
+}
+
 (async function () {
     await Promise.all([styles(), scripts(), images()]);
     if (process.argv.indexOf('--watch') >= 0) {
@@ -134,7 +136,7 @@ async function images(dir = '') {
                 for await (const _ of watcher)
                     await styles();
             } catch (err) {
-                if (err.name === 'AbortError')
+                if (isAbortError(err))
                     return;
                 throw err;
             }
@@ -146,7 +148,7 @@ async function images(dir = '') {
                 for await (const _ of watcher)
                     await scripts();
             } catch (err) {
-                if (err.name === 'AbortError')
+                if (isAbortError(err))
                     return;
                 throw err;
             }
@@ -160,7 +162,7 @@ async function images(dir = '') {
                 for await (const _ of watcher)
                     await images();
             } catch (err) {
-                if (err.name === 'AbortError')
+                if (isAbortError(err))
                     return;
                 throw err;
             }
