@@ -1,9 +1,50 @@
-const sqlite = require('better-sqlite3');
+import Database from 'better-sqlite3';
+
 const TABLE = 'packages';
 
+type Category = 'move' | 'udate';
+
+interface CommonOperations {
+    GET: Database.Statement;
+    GETNEWBYMAINTAINER: Database.Statement;
+    UPDATE: Database.Statement;
+    INCREMENT: Database.Statement;
+    DECREMENT: Database.Statement;
+    FIXFLAG: Database.Statement;
+    GETPACKAGESBYMAINTAINER: Database.Statement;
+    GETPACKAGECOUNTBYMAINTAINER: Database.Statement;
+}
+
+interface DatabaseOperations {
+    GETPACKAGE: Database.Statement;
+    ADDPACKAGE: Database.Statement;
+    GETPACKAGES: Database.Statement;
+    GETPACKAGESSTARTWITH: Database.Statement;
+    UPDATEMAINTAINER: Database.Statement;
+    GETMAINTAINERPACKAGECOUNT: Database.Statement;
+    REMOVEOLDPACKAGE: Database.Statement;
+    move: CommonOperations;
+    udate: CommonOperations;
+}
+
+interface PackageDBEntry {
+    package: string;
+    maintainer: string;
+    move: number;
+    udate: number;
+    lastseen: Date;
+}
+
+interface CountResult {
+    count: number;
+}
+
 class DB {
-    constructor(file) {
-        this._db = new sqlite(file);
+    private _db: Database.Database;
+    private _queries: DatabaseOperations;
+
+    constructor(file: string | Buffer) {
+        this._db = new Database(file);
         const db = this._db;
         db.pragma('journal_mode = WAL');
 
@@ -42,23 +83,27 @@ class DB {
         };
     }
 
-    restoreFlags() {
-        this._queries.move.FIXFLAG.run();
-        this._queries.udate.FIXFLAG.run();
+    restoreFlags(type: Category | null = null) {
+        if (type !== 'udate') {
+            this._queries.move.FIXFLAG.run();
+        }
+        if (type !== 'move') {
+            this._queries.udate.FIXFLAG.run();
+        }
     }
 
-    getPackage(pack) {
+    getPackage(pack: string): PackageDBEntry {
         return this._queries.GETPACKAGE.get({
             package: pack
-        });
+        }) as PackageDBEntry;
     }
 
-    getPackages(startsWith = null) {
+    getPackages(startsWith: string | null = null): string[] {
         return ((!!startsWith) ? this._queries.GETPACKAGESSTARTWITH.all({ startsWith }) :
-            this._queries.GETPACKAGES.all()).map(p => p.package);
+            this._queries.GETPACKAGES.all()).map(p => (p as PackageDBEntry).package);
     }
 
-    updatePackage(pack, maintainer, lastseen) {
+    updatePackage(pack: string, maintainer: string, lastseen: number): Database.RunResult {
         return this._queries[this.getPackage(pack) ? 'UPDATEMAINTAINER' : 'ADDPACKAGE'].run({
             package: pack,
             maintainer,
@@ -66,19 +111,19 @@ class DB {
         });
     }
 
-    incrementFlag(pack, type) {
+    incrementFlag(pack: string, type: Category): boolean {
         this._queries[type].INCREMENT.run({
             package: pack
         });
         return true;
     }
 
-    decrementFlags(type) {
+    decrementFlags(type: Category): boolean {
         this._queries[type].DECREMENT.run();
         return true;
     }
 
-    updateFlag(pack, type, bool) {
+    updateFlag(pack: string, type: Category, bool: number): boolean {
         this._queries[type].UPDATE.run({
             package: pack,
             bool
@@ -86,41 +131,43 @@ class DB {
         return true;
     }
 
-    getFlag(type, bool = true) {
+    getFlag(type: Category, bool: boolean = true): PackageDBEntry[] {
         return this._queries[type].GET.all({
             bool
-        });
+        }) as PackageDBEntry[];
     }
 
-    getNewByMaintainer(maintainer, type) {
+    getNewByMaintainer(maintainer: string, type: Category): PackageDBEntry[] {
         return this._queries[type].GETNEWBYMAINTAINER.all({
             maintainer
-        });
+        }) as PackageDBEntry[];
     }
 
-    getPackagesByMaintainer(maintainer, type) {
+    getPackagesByMaintainer(maintainer: string, type: Category): PackageDBEntry[] {
         return this._queries[type].GETPACKAGESBYMAINTAINER.all({
             maintainer
-        });
+        }) as PackageDBEntry[];
     }
 
-    getPackageCountByMaintainer(maintainer, type) {
-        return this._queries[type].GETPACKAGECOUNTBYMAINTAINER.get({
+    getPackageCountByMaintainer(maintainer: string, type: Category): number {
+        return (this._queries[type].GETPACKAGECOUNTBYMAINTAINER.get({
             maintainer
-        }).count;
+        }) as CountResult).count;
     }
 
-    cleanOldPackages(lastseen) {
+    cleanOldPackages(lastseen: number): Database.RunResult {
         return this._queries.REMOVEOLDPACKAGE.run({
             lastseen
         });
     }
 
-    getMaintainerPackageCount(maintainer) {
-        return this._queries.GETMAINTAINERPACKAGECOUNT.get({
+    getMaintainerPackageCount(maintainer: string): number {
+        return (this._queries.GETMAINTAINERPACKAGECOUNT.get({
             maintainer
-        }).count;
+        }) as CountResult).count;
     }
 }
 
-module.exports = DB;
+export default DB;
+export { DB };
+export type { PackageDBEntry, Category };
