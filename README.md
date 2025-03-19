@@ -39,7 +39,7 @@ node distribution/index.mjs
 
 ## Docker Setup
 
-Image : `registry.gitlab.com/sanin.dev/artix-packy-notifier`
+Image : `ghcr.io/corysanin/artix-checkupdates-web:latest`
 
 mount a folder to `/usr/notifier/config`.
 
