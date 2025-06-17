@@ -16,7 +16,7 @@ COPY . .
 
 RUN tsc && \
   npm run-script build && \
-  npm ci --only=production
+  npm ci --omit=dev
 
 
 FROM baseimg AS deploy
