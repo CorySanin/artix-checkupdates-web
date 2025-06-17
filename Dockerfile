@@ -6,7 +6,7 @@ FROM baseimg AS build-env
 
 WORKDIR /usr/notifier
 
-RUN pacman -Sy --noconfirm nodejs npm typescript
+RUN pacman -Sy --noconfirm nodejs npm typescript python
 
 COPY package*.json ./
 
