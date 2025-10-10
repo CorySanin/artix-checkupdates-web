@@ -1,6 +1,6 @@
 {
   "name": "artix-checkupdates-web",
-  "version": "4.1.4",
+  "version": "4.1.5",
   "description": "Determine packages that need attention",
   "main": "./distribution/index.js",
   "type": "module",
@@ -32,24 +32,24 @@
   "dependencies": {
     "artix-checkupdates": "1.0.2",
     "better-sqlite3": "12.2.0",
-    "dayjs": "1.11.13",
+    "dayjs": "1.11.18",
     "ejs": "3.1.10",
     "express": "5.1.0",
     "express-useragent": "1.0.15",
     "irc-framework": "4.14.0",
     "json5": "2.2.3",
-    "ky": "1.8.2",
+    "ky": "1.11.0",
     "node-cron": "4.2.1",
     "prom-client": "15.1.3",
-    "sharp": "0.34.3"
+    "sharp": "0.34.4"
   },
   "devDependencies": {
     "@sindresorhus/tsconfig": "8.0.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.3",
     "@types/express-useragent": "1.0.5",
-    "@types/node": "^24.3.0",
-    "forking-build-shit": "1.0.1",
-    "typescript": "5.9.2"
+    "@types/node": "^24.7.1",
+    "forking-build-shit": "1.0.4",
+    "typescript": "5.9.3"
   }
 }
