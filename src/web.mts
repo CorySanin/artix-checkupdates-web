@@ -2,13 +2,12 @@ import fs from 'fs';
 import * as fsp from 'node:fs/promises';
 import { DB } from './db.mjs';
 import express from 'express';
-import exuseragent from 'express-useragent';
+import * as useragent from 'express-useragent';
 import prom from 'prom-client';
 import sharp from 'sharp';
 import * as path from 'path';
 import type http from "http";
 import type { Request, Response } from "express";
-import type { Details } from "express-useragent";
 import type { Config } from './config.js';
 import type { PackageDBEntry } from './db.mjs';
 import type { SaveData } from './daemon.mjs';
@@ -132,11 +131,11 @@ class Web {
         app.set('view engine', 'ejs');
         app.set('view options', VIEWOPTIONS);
 
-        app.use(exuseragent.express());
+        app.use(useragent.express());
 
         function sendError(req: Request, res: Response, status: number, description: string) {
             console.log(`${status} (${description}): ${req.url} requested by ${req.ip} "${req.headers['user-agent']}"`);
-            if ((req.useragent as Details).browser === 'curl') {
+            if (req.useragent?.browser === 'curl') {
                 res.send('404: not found\n');
                 return;
             }
@@ -179,7 +178,7 @@ class Web {
         app.get('/', async (req, res) => {
             let packages = prepPackages(saveData.move, 'Move');
             packages = packages.concat(prepPackages(saveData.update, 'Update'));
-            if ((req.useragent as Details).browser === 'curl') {
+            if (req.useragent?.browser === 'curl') {
                 res.send(renderForCurl(packages));
                 return;
             }
@@ -211,7 +210,7 @@ class Web {
             let packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move');
             packages = packages.concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
             if (packagesOwned > 0) {
-                if ((req.useragent as Details).browser === 'curl') {
+                if (req.useragent?.browser === 'curl') {
                     res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages)}`);
                     return;
                 }
