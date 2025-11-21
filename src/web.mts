@@ -223,7 +223,8 @@ class Web {
                         },
                         maintainer,
                         packagesOwned,
-                        packages
+                        packages,
+                        userbar: `${req.protocol}://${req.host}/userbar/${maintainer}.png`
                     },
                     function (err, html) {
                         if (!err) {

@@ -52,12 +52,20 @@ p {
 a {
     text-decoration: none;
     color: #53bffc;
+
+    &:focus,
+    &:hover {
+        text-decoration: underline;
+    }
 }
 
-a:hover,
-a:focus {
-    color: #92D7FC;
-    text-decoration: underline;
+a,
+details.userbar summary {
+
+    &:focus,
+    &:hover {
+        color: #92D7FC;
+    }
 }
 
 ul {
@@ -152,6 +160,10 @@ table tr td:last-child {
     min-width: 6em;
 }
 
+details summary::marker {
+    display: inline;
+}
+
 .container {
     padding: .5em .75em;
     width: 80%;
@@ -161,6 +173,34 @@ table tr td:last-child {
     &.bg {
         background-color: #2a2a2a;
         border: 1px solid #858585;
+    }
+}
+
+.userbar {
+    margin-top: 1em;
+
+    summary {
+        cursor: pointer;
+        display: list-item;
+
+        &>h5 {
+            display: inline;
+        }
+    }
+
+    textarea {
+        margin-top: .5em;
+        background-color: #1a1a1a;
+        color: inherit;
+        max-width: 100%;
+        width: 400px;
+        min-height: 70px;
+        border: 1px solid #858585;
+    }
+
+    img {
+        max-width: 100%;
+        height: auto;
     }
 }
 
