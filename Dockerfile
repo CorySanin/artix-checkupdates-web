@@ -6,7 +6,7 @@ FROM baseimg AS build-env
 
 WORKDIR /usr/notifier
 
-RUN pacman -Sy --noconfirm nodejs npm typescript python
+RUN pacman -Sy --noconfirm nodejs-lts-jod npm typescript python
 
 COPY package*.json ./
 
@@ -28,7 +28,7 @@ HEALTHCHECK  --timeout=15m \
 
 EXPOSE 8080
 
-RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs npm openssh icu glibc openssl openssl-1.1 &&\
+RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs-lts-jod npm openssh icu glibc openssl openssl-1.1 &&\
   mkdir -p /root/.config/artools/ /root/.cache/ && \
   useradd -m artix
 
