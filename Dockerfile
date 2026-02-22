@@ -8,9 +8,8 @@ WORKDIR /usr/notifier
 
 RUN pacman -Sy --noconfirm nodejs-lts-jod npm typescript python
 
-COPY package*.json ./
-
-RUN npm install
+RUN --mount=target=/usr/notifier/package.json,source=package.json --mount=target=/usr/notifier/package-lock.json,source=package-lock.json \
+  npm ci
 
 COPY . .
 
@@ -30,16 +29,14 @@ EXPOSE 8080
 
 RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs-lts-jod npm openssh icu glibc openssl openssl-1.1 &&\
   mkdir -p /root/.config/artools/ /root/.cache/ && \
-  useradd -m artix
-
-COPY --from=build-env /usr/notifier /usr/notifier
-
-RUN mkdir -p ./config /home/artix/.config/artix-checkupdates \
+  useradd -m artix && \
+  mkdir -p ./config /home/artix/.config/artix-checkupdates \
   /home/artix/.config/artools /home/artix/.cache/artix-checkupdates && \
   ln -sf /usr/notifier/config/artools-pkg.conf /home/artix/.config/artools/artools-pkg.conf && \
   ln -sf /usr/notifier/config/artix-checkupdates.conf /home/artix/.config/artix-checkupdates/config && \
-  chown -R artix:artix /home/artix/ && \
-  chown -R artix:artix .
+  chown -R artix:artix /home/artix/.config/artix-checkupdates /home/artix/.config/artools /home/artix/.cache/artix-checkupdates
+
+COPY --from=build-env --chown=artix:artix /usr/notifier /usr/notifier
 
 USER artix
 
