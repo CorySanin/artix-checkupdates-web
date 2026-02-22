@@ -29,8 +29,9 @@
             </tr>
             <% }); %>
         </table>
-
+        <% if (userbar) { %>
         <%- include("userbar", {url: userbar}) %>
+        <% } %>
     </div>
     <%- include("footer", locals) %>
 </body>

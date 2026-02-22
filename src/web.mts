@@ -6,11 +6,11 @@ import * as useragent from 'express-useragent';
 import prom from 'prom-client';
 import sharp from 'sharp';
 import * as path from 'path';
+import { ORPHAN, type SaveData } from './daemon.mjs';
 import type http from "http";
 import type { Request, Response } from "express";
 import type { Config } from './config.js';
 import type { PackageDBEntry } from './db.mjs';
-import type { SaveData } from './daemon.mjs';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
 const VIEWOPTIONS = {
@@ -108,7 +108,7 @@ async function createOutlinedText(string: string, meta: sharp.Metadata, gravity:
     return txt.composite(layers);
 }
 
-class Web {
+export class Web {
     private _webserver: http.Server;
     private _privateserver: http.Server;
 
@@ -176,8 +176,8 @@ class Web {
         });
 
         app.get('/', async (req, res) => {
-            let packages = prepPackages(saveData.move, 'Move');
-            packages = packages.concat(prepPackages(saveData.update, 'Update'));
+            const packages = prepPackages(saveData.move, 'Move')
+                .concat(prepPackages(saveData.update, 'Update'));
             if (req.useragent?.browser === 'curl') {
                 res.send(renderForCurl(packages));
                 return;
@@ -204,11 +204,44 @@ class Web {
             );
         });
 
+        app.get('/maintainer/orphan', async (req, res) => {
+            const maintainer = ORPHAN.name;
+            const packagesOwned = db.getMaintainerPackageCount(maintainer);
+            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
+                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
+            if (req.useragent?.browser === 'curl') {
+                res.send(`orphaned pending actions\n\n${renderForCurl(packages)}`);
+                return;
+            }
+            res.render('maintainer',
+                {
+                    inliner,
+                    site: {
+                        prefix: 'Artix Checkupdates',
+                        suffix: `Packages that need maintainers`
+                    },
+                    maintainer: maintainer,
+                    packagesOwned,
+                    packages,
+                    userbar: null
+                },
+                function (err, html) {
+                    if (!err) {
+                        res.send(html);
+                    }
+                    else {
+                        console.error(err);
+                        res.status(500).send('Something went wrong. Try again later.');
+                    }
+                }
+            );
+        });
+
         app.get('/maintainer/:maintainer', async (req, res) => {
             const maintainer = req.params.maintainer;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
-            let packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move');
-            packages = packages.concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
+            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
+                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
             if (packagesOwned > 0) {
                 if (req.useragent?.browser === 'curl') {
                     res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages)}`);
@@ -395,4 +428,3 @@ class Web {
 }
 
 export default Web;
-export { Web };

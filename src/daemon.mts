@@ -1,7 +1,8 @@
 import { Checkupdates } from 'artix-checkupdates';
 import { DB } from './db.mjs';
-import { spawn } from 'child_process';
+import { spawn } from 'spawn-but-with-promises';
 import ky from 'ky';
+import delay from 'delay';
 import * as path from 'path';
 import * as fsp from 'node:fs/promises';
 import * as cron from 'node-cron';
@@ -11,9 +12,10 @@ import type http from "http";
 import type { Express } from "express";
 import type { Config, MaintainerArrayElement } from './config.js';
 import type { Category, PackageDBEntry } from './db.mjs';
+import type Stream from 'node:stream';
 
 const TIMEOUT = 180000;
-const ORPHAN = {
+export const ORPHAN = {
     "name": "orphan",
     "ircName": "orphaned"
 };
@@ -22,13 +24,13 @@ const NICETYPES = {
     udate: 'update'
 };
 
-type SaveData = {
+export type SaveData = {
     'last-sync': string | null;
     move: string[];
     update: string[];
 }
 
-type AppriseConf = {
+export type AppriseConf = {
     api: string;
     urls: string[];
 }
@@ -37,7 +39,7 @@ function notStupidParseInt(v: string | undefined): number {
     return v === undefined ? NaN : parseInt(v);
 }
 
-class Daemon {
+export class Daemon {
     private _config: Config;
     private _savePath: string;
     private _locked: boolean;
@@ -85,7 +87,7 @@ class Daemon {
         }
         this._locked = true;
         console.log('Starting scheduled task');
-        let now = dayjs();
+        const now = dayjs();
         if (!('last-sync' in this._saveData) || !this._saveData['last-sync'] || dayjs(this._saveData['last-sync']).isBefore(now.subtract(notStupidParseInt(process.env['SYNCFREQ']) || config.syncfreq || 2, 'days'))) {
             await this.updateMaintainers(config);
             this._saveData['last-sync'] = now.toJSON();
@@ -101,18 +103,29 @@ class Daemon {
         const db = this._db;
         console.log('Syncing packages...');
         const lastseen = (new Date()).getTime();
-        const maintainers = [...(config.maintainers || []), ORPHAN];
+        const maintainers = config.maintainers || []; //[...(config.maintainers || []), ORPHAN];
+
+        console.log('Getting all packages...');
+        try {
+            const packages = await this.getAllPackages();
+            packages.forEach(p => {
+                db.updatePackage(p, ORPHAN.name, lastseen);
+            });
+        }
+        catch (err) {
+            console.error(`Failed to get all packages`);
+            console.error(err);
+        }
+
         for (let i = 0; i < maintainers.length; i++) {
-            let maintainer = maintainers[i] as MaintainerArrayElement;
-            if (typeof maintainer === 'object') {
-                maintainer = maintainer.name;
-            }
+            const mae = maintainers[i] as MaintainerArrayElement;
+            const maintainer = typeof mae === 'object' ? mae.name : mae;
             console.log(`Syncing ${maintainer}...`);
             try {
-                const packages: string[] = await this.getMaintainersPackages(maintainer);
-                for (let j = 0; j < packages.length; j++) {
-                    db.updatePackage(packages[j] as string, maintainer, lastseen);
-                }
+                const packages = await this.getMaintainersPackages(maintainer);
+                packages.forEach(p => {
+                    db.updatePackage(p, maintainer, lastseen);
+                });
             }
             catch (err) {
                 console.error(`Failed to get packages for ${maintainer}`);
@@ -135,36 +148,53 @@ class Daemon {
         }
     }
 
-    getMaintainersPackages = (maintainer: string): Promise<string[]> => {
-        return new Promise((resolve, reject) => {
-            let process = spawn('artixpkg', ['admin', 'query', maintainer === ORPHAN.name ? '-t' : '-m', maintainer]);
-            let timeout = setTimeout(() => {
-                reject('Timed out');
-                process.kill();
-            }, TIMEOUT);
-            let packagelist: string[] = [];
-            process.stdout.on('data', data => {
-                packagelist = packagelist.concat(data.toString().trim().split('\n'));
-            });
-            process.stderr.on('data', err => {
-                console.error(err.toString());
-            })
-            process.on('exit', async (code) => {
-                if (code === 0) {
-                    clearTimeout(timeout);
-                    resolve(packagelist);
-                }
-                else {
-                    reject(code);
-                }
+    getMaintainersPackages = async (maintainer: string): Promise<string[]> => {
+        const process = spawn('artixpkg', ['admin', 'query', '-m', maintainer], { timeout: TIMEOUT, rejectOnNonZero: true });
+        const packagelist: string[] = [];
+        process.stdout.on('data', (data: Stream) => {
+            packagelist.push(...data.toString().trim().split('\n'));
+        });
+        process.stderr.on('data', (err: Stream) => {
+            console.error(err.toString());
+        });
+        await process;
+        return packagelist;
+    }
+
+    getAllPackages = async () => {
+        const repos = ['lib32', 'galaxy', 'world', 'system'];
+        const suffixes = ['-goblins', '-gremlins', ''];
+        const fqRepos: string[] = [];
+        const packageSet: Set<string> = new Set();
+        repos.forEach(r => {
+            suffixes.forEach(s => {
+                fqRepos.push(`${r}${s}`);
             });
         });
+        while (true) {
+            const repo = fqRepos.pop();
+            if (repo === undefined) {
+                break;
+            }
+            const process = spawn('artixpkg', ['admin', 'query', '-t', repo], { timeout: TIMEOUT, rejectOnNonZero: true });
+            process.stdout.on('data', (data: Stream) => {
+                data.toString().trim().split('\n').forEach(p => packageSet.add(p));
+            });
+            process.stderr.on('data', (err: Stream) => {
+                console.error(err.toString());
+            });
+            await process;
+            if (fqRepos.length) {
+                await delay(5000);
+            }
+        }
+        return [...packageSet];
     }
 
     handleUpdates = async (config: Config, packs: string[], type: Category) => {
         const db = this._db;
         packs.forEach(v => {
-            let p = db.getPackage(v);
+            const p = db.getPackage(v);
             p && db.updateFlag(v, type, p[type] > 0 ? 2 : 4);
         });
         const maintainers: MaintainerArrayElement[] = [...config.maintainers, ORPHAN];
@@ -264,5 +294,3 @@ class Daemon {
 }
 
 export default Daemon;
-export { Daemon };
-export type { SaveData };
