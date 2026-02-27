@@ -1,6 +1,6 @@
 {
   "name": "artix-checkupdates-web",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "Determine packages that need attention",
   "main": "./distribution/index.js",
   "type": "module",
