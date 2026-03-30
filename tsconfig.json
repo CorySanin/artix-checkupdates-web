@@ -2,7 +2,8 @@
   "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
     "exactOptionalPropertyTypes": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "rootDir": "./src"
   },
   "include": [
     "src"
