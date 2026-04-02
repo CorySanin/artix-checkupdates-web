@@ -140,8 +140,8 @@ export class Daemon {
     checkupdates = async (config: Config) => {
         const check = new Checkupdates();
         try {
-            await this.handleUpdates(config, this._saveData.move = (await check.fetchMovable()).map(p => p.basename), 'move');
-            await this.handleUpdates(config, this._saveData.update = (await check.fetchUpgradable()).map(p => p.basename), 'udate');
+            await this.handleUpdates(config, this._saveData.move = (await check.fetchMovable(false, 3)).map(p => p.basename), 'move');
+            await this.handleUpdates(config, this._saveData.update = (await check.fetchUpgradable(false, 3)).map(p => p.basename), 'udate');
         }
         catch (ex) {
             console.error('Failed to check for updates:', ex);
