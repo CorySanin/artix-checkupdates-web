@@ -39,12 +39,17 @@ function packageUrl(p: ParseablePackage) {
     return `https://gitea.artixlinux.org/packages/${parsePackage(p)}`;
 }
 
+function upsreamUrl(p: ParseablePackage) {
+    return `https://gitlab.archlinux.org/archlinux/packaging/packages/${parsePackage(p)}/-/commits/main?ref_type=HEADS`
+}
+
 function prepPackages(arr: ParseablePackage[], action: Action): WebPackageObject[] {
     return arr.map(m => {
         return {
             package: parsePackage(m),
             action,
-            url: packageUrl(m)
+            url: packageUrl(m),
+            upstream: upsreamUrl(m)
         }
     });
 }

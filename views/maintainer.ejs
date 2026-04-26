@@ -20,11 +20,13 @@
         <table>
             <tr>
                 <th>Package</th>
+                <th>Upstream</th>
                 <th>Action</th>
             </tr>
             <% packages && packages.forEach(p => { %>
             <tr>
                 <td><a href="<%= p.url %>"><%= p.package %></a></td>
+                <td><a href="<%= p.upstream %>">Upstream repo</a></td>
                 <td><%= p.action %></td>
             </tr>
             <% }); %>
