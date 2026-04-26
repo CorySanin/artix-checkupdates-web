@@ -6,16 +6,16 @@ FROM baseimg AS build-env
 
 WORKDIR /usr/notifier
 
-RUN pacman -Sy --noconfirm nodejs-lts-jod npm typescript python
+RUN pacman -Sy --noconfirm nodejs-lts-jod pnpm typescript python
 
-RUN --mount=target=/usr/notifier/package.json,source=package.json --mount=target=/usr/notifier/package-lock.json,source=package-lock.json \
-  npm ci
+RUN --mount=target=/usr/notifier/package.json,source=package.json --mount=target=/usr/notifier/pnpm-lock.yaml,source=pnpm-lock.yaml \
+  pnpm install
 
 COPY . .
 
 RUN tsc && \
-  npm run-script build && \
-  npm ci --omit=dev
+  pnpm run-script build && \
+  pnpm install --prod
 
 
 FROM baseimg AS deploy
