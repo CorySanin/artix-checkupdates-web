@@ -53,7 +53,7 @@ function notStupidParseInt(v: string | undefined): number {
 }
 
 async function nvcheck(pack: CheckupdatesResult) {
-    const curVer = pack.artixVersion;
+    const curVer = pack.artixVersion.substring(Math.max(0, pack.artixVersion.indexOf(':')), pack.artixVersion.lastIndexOf('-'));
     const gitdir = await fsp.mkdtemp(path.join(tmpdir(), 'git_'));
     if ((await spawn('git', ['clone', '--depth=1', `${packageUrl(pack.basename)}.git`, gitdir])) !== 0) {
         console.log(`${pack.basename} | failed to clone`);
