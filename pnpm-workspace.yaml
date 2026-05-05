@@ -3,3 +3,5 @@ allowBuilds:
   better-sqlite3: true
   core-js: false
   sharp: true
+overrides:
+  ip-address@<=10.1.0: '>=10.1.1'

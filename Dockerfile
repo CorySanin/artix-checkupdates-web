@@ -8,7 +8,9 @@ WORKDIR /usr/notifier
 
 RUN pacman -Sy --noconfirm nodejs-lts-jod pnpm typescript python
 
-RUN --mount=target=/usr/notifier/package.json,source=package.json --mount=target=/usr/notifier/pnpm-lock.yaml,source=pnpm-lock.yaml \
+RUN --mount=target=/usr/notifier/package.json,source=package.json \
+    --mount=target=/usr/notifier/pnpm-lock.yaml,source=pnpm-lock.yaml \
+    --mount=target=/usr/notifier/pnpm-workspace.yaml,source=pnpm-workspace.yaml \
   pnpm install
 
 COPY --link . .
