@@ -28,7 +28,7 @@ HEALTHCHECK  --timeout=15m \
 
 EXPOSE 8080
 
-RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs-lts-jod npm openssh icu glibc openssl &&\
+RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs-lts-jod npm openssh icu glibc openssl nvchecker &&\
   useradd -m artix && \
   mkdir -p /root/.config/artools/ /root/.cache/ /home/artix/.config/artix-checkupdates \
   /home/artix/.config/artools /home/artix/.cache/artix-checkupdates && \

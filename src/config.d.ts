@@ -25,6 +25,7 @@ export type Config = {
     maintainers: MaintainerArrayElement[];
     cron?: string;
     syncfreq: number;
+    nvcheckfreq: number;
     db?: string;
     port?: number;
     privateport?: number;

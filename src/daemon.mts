@@ -1,6 +1,8 @@
-import { Checkupdates } from 'artix-checkupdates';
+import { Checkupdates, type CheckupdatesResult } from 'artix-checkupdates';
 import { DB } from './db.mjs';
+import { packageUrl } from './web.mjs';
 import { spawn } from 'spawn-but-with-promises';
+import { tmpdir } from 'node:os';
 import ky from 'ky';
 import delay from 'delay';
 import * as path from 'path';
@@ -26,6 +28,7 @@ const NICETYPES = {
 
 export type SaveData = {
     'last-sync': string | null;
+    'last-nvcheck': string | null;
     move: string[];
     update: string[];
 }
@@ -35,8 +38,39 @@ export type AppriseConf = {
     urls: string[];
 }
 
+interface NvLog {
+    level: 'info' | 'debug';
+    name: string;
+    logger_name: string;
+    event: string;
+    version?: string;
+    revision?: string;
+}
+
 function notStupidParseInt(v: string | undefined): number {
     return v === undefined ? NaN : parseInt(v);
+}
+
+async function nvcheck(pack: CheckupdatesResult) {
+    const curVer = pack.artixVersion;
+    const gitdir = await fsp.mkdtemp(path.join(tmpdir(), 'git_'));
+    if ((await spawn('git', ['clone', '--depth=1', `${packageUrl(pack.basename)}.git`, gitdir])) !== 0) {
+        console.log(`${pack.basename} | failed to clone`);
+        return false;
+    }
+    const nvcheckerproc = spawn('nvchecker', ['--logger', 'json', '-c', path.join(gitdir, '.nvchecker.toml')]);
+    let outputstr = '';
+    nvcheckerproc.stdout.on('data', data => {
+        outputstr += data.toString();
+    });
+    const exitCode = await nvcheckerproc;
+    fsp.rm(gitdir, { recursive: true, force: true });
+    if (exitCode !== 0) {
+        return false;
+    }
+    console.log(`${pack.basename} | .nvchecker.toml found`);
+    const nvLogs = outputstr.trim().split('\n').map(line => JSON.parse(line) as NvLog).filter(nvl => nvl.level === 'info');
+    return !!(nvLogs.length && nvLogs[0]?.version && nvLogs[0].version !== curVer);
 }
 
 export class Daemon {
@@ -59,6 +93,7 @@ export class Daemon {
         const db = this._db = new DB(process.env['DBPATH'] || config.db || path.join(PROJECT_ROOT, 'config', 'packages.db'));
         this._saveData = {
             'last-sync': null,
+            'last-nvcheck': null,
             move: [],
             update: []
         };
@@ -88,7 +123,7 @@ export class Daemon {
         this._locked = true;
         console.log('Starting scheduled task');
         const now = dayjs();
-        if (!('last-sync' in this._saveData) || !this._saveData['last-sync'] || dayjs(this._saveData['last-sync']).isBefore(now.subtract(notStupidParseInt(process.env['SYNCFREQ']) || config.syncfreq || 2, 'days'))) {
+        if (!this._saveData?.['last-sync'] || dayjs(this._saveData['last-sync']).isBefore(now.subtract(notStupidParseInt(process.env['SYNCFREQ']) || config.syncfreq || 2, 'days'))) {
             await this.updateMaintainers(config);
             this._saveData['last-sync'] = now.toJSON();
             await this.writeSaveData();
@@ -103,7 +138,7 @@ export class Daemon {
         const db = this._db;
         console.log('Syncing packages...');
         const lastseen = (new Date()).getTime();
-        const maintainers = config.maintainers || []; //[...(config.maintainers || []), ORPHAN];
+        const maintainers = config.maintainers || [];
 
         console.log('Getting all packages...');
         try {
@@ -140,8 +175,8 @@ export class Daemon {
     checkupdates = async (config: Config) => {
         const check = new Checkupdates();
         try {
-            await this.handleUpdates(config, this._saveData.move = (await check.fetchMovable(false, 3)).map(p => p.basename), 'move');
-            await this.handleUpdates(config, this._saveData.update = (await check.fetchUpgradable(false, 3)).map(p => p.basename), 'udate');
+            await this.handleUpdates(config, this._saveData.move = (await check.fetchMovable(true, 3)).map(p => p.basename), 'move');
+            await this.handleUpdates(config, this._saveData.update = (await check.fetchUpgradable(true, 3)).map(p => p.basename), 'udate');
         }
         catch (ex) {
             console.error('Failed to check for updates:', ex);
@@ -193,10 +228,28 @@ export class Daemon {
 
     handleUpdates = async (config: Config, packs: string[], type: Category) => {
         const db = this._db;
+        const now = dayjs();
+        const nvcheckpass = type == 'udate' && (!this._saveData?.['last-nvcheck'] || dayjs(this._saveData['last-nvcheck']).isBefore(now.subtract(notStupidParseInt(process.env['NVCHECKFREQ']) || config.nvcheckfreq || 3, 'days')))
         packs.forEach(v => {
             const p = db.getPackage(v);
             p && db.updateFlag(v, type, p[type] > 0 ? 2 : 4);
         });
+        if (nvcheckpass) {
+            console.log('running nvchecker');
+            const check = new Checkupdates();
+            const artixOnly = await check.fetchArtixOnly(true, 3);
+            for (let i = 0; i < artixOnly.length; i++) {
+                const aop = artixOnly[i]!;
+                if (! await nvcheck(aop)) {
+                    db.updateFlag(aop.basename, type, 0);
+                    continue;
+                }
+                const p = db.getPackage(aop.basename);
+                p && db.updateFlag(aop.basename, type, p[type] > 0 ? 7 : 8);
+            }
+            this._saveData['last-nvcheck'] = now.toJSON();
+            await this.writeSaveData();
+        }
         const maintainers: MaintainerArrayElement[] = [...config.maintainers, ORPHAN];
         for (let i = 0; i < maintainers.length; i++) {
             const m = maintainers[i] as MaintainerArrayElement;

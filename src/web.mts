@@ -35,7 +35,7 @@ function parsePackage(p: ParseablePackage): string {
     return typeof p === 'string' ? p : p.package;
 }
 
-function packageUrl(p: ParseablePackage) {
+export function packageUrl(p: ParseablePackage) {
     return `https://gitea.artixlinux.org/packages/${parsePackage(p)}`;
 }
 
@@ -128,6 +128,7 @@ export class Web {
         const savePath = process.env['SAVEPATH'] || options.savePath || path.join(PROJECT_ROOT, 'config', 'data.json');
         let saveData: SaveData = {
             'last-sync': null,
+            'last-nvcheck': null,
             move: [],
             update: []
         };
