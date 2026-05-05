@@ -11,11 +11,12 @@ RUN pacman -Sy --noconfirm nodejs-lts-jod pnpm typescript python
 RUN --mount=target=/usr/notifier/package.json,source=package.json --mount=target=/usr/notifier/pnpm-lock.yaml,source=pnpm-lock.yaml \
   pnpm install
 
-COPY . .
+COPY --link . .
 
 RUN tsc && \
   pnpm run-script build && \
-  pnpm install --prod
+  pnpm install --prod && \
+  mkdir ./config
 
 
 FROM baseimg AS deploy
@@ -28,9 +29,8 @@ HEALTHCHECK  --timeout=15m \
 EXPOSE 8080
 
 RUN pacman -Sy --noconfirm curl artools-pkg artix-checkupdates git nodejs-lts-jod npm openssh icu glibc openssl &&\
-  mkdir -p /root/.config/artools/ /root/.cache/ && \
   useradd -m artix && \
-  mkdir -p ./config /home/artix/.config/artix-checkupdates \
+  mkdir -p /root/.config/artools/ /root/.cache/ /home/artix/.config/artix-checkupdates \
   /home/artix/.config/artools /home/artix/.cache/artix-checkupdates && \
   ln -sf /usr/notifier/config/artools-pkg.conf /home/artix/.config/artools/artools-pkg.conf && \
   ln -sf /usr/notifier/config/artix-checkupdates.conf /home/artix/.config/artix-checkupdates/config && \

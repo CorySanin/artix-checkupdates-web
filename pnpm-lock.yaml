@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       artix-checkupdates:
-        specifier: 1.2.0
-        version: 1.2.0
+        specifier: 1.3.0
+        version: 1.3.0
       better-sqlite3:
         specifier: 12.9.0
         version: 12.9.0
@@ -367,8 +367,8 @@ packages:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
 
-  artix-checkupdates@1.2.0:
-    resolution: {integrity: sha512-gVs2ydNV8JXzFGms9ojpFWHxyuUZYidZmua460iWjElDK96hmzDcRzS48MR0OHvS8RaSbZSpY3N5TqX2VQnBkA==}
+  artix-checkupdates@1.3.0:
+    resolution: {integrity: sha512-IeVnJH736VnlgHJDbnv0D6zxJrAzWhoyiJZgOnKO2iRIjXoryGGOne2KWQNwhRf8YqmqW4EPlt7RpCqSBoGtzQ==}
 
   available-typed-arrays@1.0.7:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
@@ -1198,7 +1198,7 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.0.0
 
-  artix-checkupdates@1.2.0:
+  artix-checkupdates@1.3.0:
     dependencies:
       delay: 7.0.0
       spawn-but-with-promises: 1.0.4
