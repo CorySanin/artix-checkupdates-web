@@ -62,7 +62,7 @@ class DB {
             REMOVEOLDPACKAGE: db.prepare(`DELETE FROM ${TABLE} WHERE lastseen < @lastseen;`),
             move: {
                 GET: db.prepare(`SELECT * FROM ${TABLE} WHERE move = @bool;`),
-                GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (udate = 4 OR udate = 9);`),
+                GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (udate = 4 OR udate = 8);`),
                 UPDATE: db.prepare(`UPDATE ${TABLE} SET move = @bool WHERE package = @package`),
                 INCREMENT: db.prepare(`UPDATE ${TABLE} SET move = move + 1 WHERE package = @package`),
                 DECREMENT: db.prepare(`UPDATE ${TABLE} SET move = 0 WHERE move = 1`),
@@ -72,7 +72,7 @@ class DB {
             },
             udate: {
                 GET: db.prepare(`SELECT * FROM ${TABLE} WHERE udate = @bool;`),
-                GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (udate = 4 OR udate = 9);`),
+                GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (udate = 4 OR udate = 8);`),
                 UPDATE: db.prepare(`UPDATE ${TABLE} SET udate = @bool WHERE package = @package`),
                 INCREMENT: db.prepare(`UPDATE ${TABLE} SET udate = udate + 1 WHERE package = @package`),
                 DECREMENT: db.prepare(`UPDATE ${TABLE} SET udate = 0 WHERE udate = 1`),
