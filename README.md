@@ -33,8 +33,8 @@ If the channel is intended only for the bot to broadcast, consider setting the c
 ## How to run
 
 ```
-npm install
-npm exec tsc
+pnpm install
+pnpm run build
 node distribution/index.mjs
 ```
 

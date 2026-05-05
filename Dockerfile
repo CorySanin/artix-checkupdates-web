@@ -13,8 +13,7 @@ RUN --mount=target=/usr/notifier/package.json,source=package.json --mount=target
 
 COPY --link . .
 
-RUN tsc && \
-  pnpm run-script build && \
+RUN pnpm run-script build && \
   pnpm install --prod && \
   mkdir ./config
 
