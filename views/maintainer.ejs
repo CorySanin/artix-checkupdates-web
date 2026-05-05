@@ -26,7 +26,7 @@
             <% packages && packages.forEach(p => { %>
             <tr>
                 <td><a href="<%= p.url %>"><%= p.package %></a></td>
-                <td><a href="<%= p.upstream %>">Upstream repo</a></td>
+                <td><% if (p.upstream) { %><a href="<%= p.upstream %>">Upstream repo</a><% } else { echo('N/A'); } %></td>
                 <td><%= p.action %></td>
             </tr>
             <% }); %>

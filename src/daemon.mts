@@ -31,6 +31,7 @@ export type SaveData = {
     'last-nvcheck': string | null;
     move: string[];
     update: string[];
+    aoupdate: string[];
 }
 
 export type AppriseConf = {
@@ -95,7 +96,8 @@ export class Daemon {
             'last-sync': null,
             'last-nvcheck': null,
             move: [],
-            update: []
+            update: [],
+            aoupdate: [],
         };
 
         app.set('trust proxy', 1);
@@ -238,14 +240,17 @@ export class Daemon {
             console.log('running nvchecker');
             const check = new Checkupdates();
             const artixOnly = await check.fetchArtixOnly(true, 3);
+            const aoupdate: string[] = this._saveData.aoupdate = [];
             for (let i = 0; i < artixOnly.length; i++) {
                 const aop = artixOnly[i]!;
+                const aobasename = aop.basename;
                 if (! await nvcheck(aop)) {
-                    db.updateFlag(aop.basename, type, 0);
+                    db.updateFlag(aobasename, type, 0);
                     continue;
                 }
-                const p = db.getPackage(aop.basename);
-                p && db.updateFlag(aop.basename, type, p[type] > 0 ? 7 : 8);
+                aoupdate.push(aobasename);
+                const p = db.getPackage(aobasename);
+                p && db.updateFlag(aobasename, type, p[type] > 0 ? 7 : 8);
             }
             this._saveData['last-nvcheck'] = now.toJSON();
             await this.writeSaveData();

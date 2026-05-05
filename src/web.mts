@@ -39,17 +39,18 @@ export function packageUrl(p: ParseablePackage) {
     return `https://gitea.artixlinux.org/packages/${parsePackage(p)}`;
 }
 
-function upsreamUrl(p: ParseablePackage) {
+function upstreamUrl(p: ParseablePackage) {
     return `https://gitlab.archlinux.org/archlinux/packaging/packages/${parsePackage(p)}/-/commits/main?ref_type=HEADS`
 }
 
-function prepPackages(arr: ParseablePackage[], action: Action): WebPackageObject[] {
+function prepPackages(arr: ParseablePackage[], action: Action, upstream: boolean = true): WebPackageObject[] {
     return arr.map(m => {
+        const hasUpstream = upstream || (typeof m === 'object' && m.udate < 4);
         return {
             package: parsePackage(m),
             action,
             url: packageUrl(m),
-            upstream: upsreamUrl(m)
+            upstream: hasUpstream ? upstreamUrl(m) : null
         }
     });
 }
@@ -130,7 +131,8 @@ export class Web {
             'last-sync': null,
             'last-nvcheck': null,
             move: [],
-            update: []
+            update: [],
+            aoupdate: []
         };
 
         app.set('trust proxy', 1);
@@ -183,7 +185,8 @@ export class Web {
 
         app.get('/', async (req, res) => {
             const packages = prepPackages(saveData.move, 'Move')
-                .concat(prepPackages(saveData.update, 'Update'));
+                .concat(prepPackages(saveData.update, 'Update'))
+                .concat(prepPackages(saveData.aoupdate, 'Update', false));
             if (req.useragent?.browser === 'curl') {
                 res.send(renderForCurl(packages));
                 return;
@@ -214,7 +217,7 @@ export class Web {
             const maintainer = ORPHAN.name;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
             const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
-                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
+                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false));
             if (req.useragent?.browser === 'curl') {
                 res.send(`orphaned pending actions\n\n${renderForCurl(packages)}`);
                 return;
@@ -247,7 +250,7 @@ export class Web {
             const maintainer = req.params.maintainer;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
             const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
-                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update'));
+                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false));
             if (packagesOwned > 0) {
                 if (req.useragent?.browser === 'curl') {
                     res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages)}`);
