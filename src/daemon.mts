@@ -71,7 +71,9 @@ async function nvcheck(pack: CheckupdatesResult) {
     }
     console.log(`${pack.basename} | .nvchecker.toml found`);
     const nvLogs = outputstr.trim().split('\n').map(line => JSON.parse(line) as NvLog).filter(nvl => nvl.level === 'info');
-    return !!(nvLogs.length && nvLogs[0]?.version && nvLogs[0].version !== curVer);
+    const latest = nvLogs.length && nvLogs[0]?.version;
+    console.log(`${pack.basename} | current: '${curVer}' latest: '${latest || '-'}'`);
+    return !!(latest && latest !== curVer);
 }
 
 export class Daemon {
