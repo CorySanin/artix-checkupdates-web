@@ -240,6 +240,7 @@ export class Daemon {
         });
         if (nvcheckpass) {
             console.log('running nvchecker');
+            db.prepareArtixOnly();
             const check = new Checkupdates();
             const artixOnly = await check.fetchArtixOnly(true, 3);
             const aoupdate: string[] = this._saveData.aoupdate = [];
@@ -255,6 +256,7 @@ export class Daemon {
                 p && db.updateFlag(aobasename, type, p[type] > 0 ? 7 : 8);
             }
             this._saveData['last-nvcheck'] = now.toJSON();
+            db.cleanArtixOnly();
             await this.writeSaveData();
         }
         const maintainers: MaintainerArrayElement[] = [...config.maintainers, ORPHAN];

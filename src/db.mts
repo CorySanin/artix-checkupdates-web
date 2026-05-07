@@ -23,6 +23,8 @@ interface DatabaseOperations {
     UPDATEMAINTAINER: Database.Statement;
     GETMAINTAINERPACKAGECOUNT: Database.Statement;
     REMOVEOLDPACKAGE: Database.Statement;
+    PREPAREARTIXONLY: Database.Statement;
+    CLEANARTIXONLY: Database.Statement;
     move: CommonOperations;
     udate: CommonOperations;
 }
@@ -60,6 +62,8 @@ class DB {
             UPDATEMAINTAINER: db.prepare(`UPDATE ${TABLE} SET maintainer = @maintainer, lastseen= @lastseen WHERE package = @package`),
             GETMAINTAINERPACKAGECOUNT: db.prepare(`SELECT COUNT(package) as count FROM ${TABLE} WHERE maintainer = @maintainer;`),
             REMOVEOLDPACKAGE: db.prepare(`DELETE FROM ${TABLE} WHERE lastseen < @lastseen;`),
+            PREPAREARTIXONLY: db.prepare(`UPDATE ${TABLE} SET udate = 6 WHERE udate > 6`),
+            CLEANARTIXONLY: db.prepare(`DELETE FROM ${TABLE} WHERE udate = 6`),
             move: {
                 GET: db.prepare(`SELECT * FROM ${TABLE} WHERE move = @bool;`),
                 GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (udate = 4 OR udate = 8);`),
@@ -165,6 +169,14 @@ class DB {
         return (this._queries.GETMAINTAINERPACKAGECOUNT.get({
             maintainer
         }) as CountResult).count;
+    }
+
+    prepareArtixOnly() {
+        return this._queries.PREPAREARTIXONLY.run();
+    }
+
+    cleanArtixOnly() {
+        return this._queries.CLEANARTIXONLY.run();
     }
 }
 
