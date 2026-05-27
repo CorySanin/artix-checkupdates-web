@@ -66,11 +66,11 @@ class DB {
             CLEANARTIXONLY: db.prepare(`DELETE FROM ${TABLE} WHERE udate = 6`),
             move: {
                 GET: db.prepare(`SELECT * FROM ${TABLE} WHERE move = @bool;`),
-                GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (udate = 4 OR udate = 8);`),
+                GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (move = 4 OR move = 8);`),
                 UPDATE: db.prepare(`UPDATE ${TABLE} SET move = @bool WHERE package = @package`),
                 INCREMENT: db.prepare(`UPDATE ${TABLE} SET move = move + 1 WHERE package = @package`),
                 DECREMENT: db.prepare(`UPDATE ${TABLE} SET move = 0 WHERE move = 1`),
-                FIXFLAG: db.prepare(`UPDATE ${TABLE} SET move = 1 WHERE move > 1 AND udate < 7`),
+                FIXFLAG: db.prepare(`UPDATE ${TABLE} SET move = 1 WHERE move > 1 AND move < 7`),
                 GETPACKAGESBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND move > 0 ORDER BY package ASC;`),
                 GETPACKAGECOUNTBYMAINTAINER: db.prepare(`SELECT COUNT(package) as count FROM ${TABLE} WHERE maintainer = @maintainer AND move > 0;`)
             },
