@@ -5,3 +5,4 @@ allowBuilds:
   sharp: true
 overrides:
   ip-address@<=10.1.0: '>=10.1.1'
+  qs@>=6.11.1 <=6.15.1: '>=6.15.2'
