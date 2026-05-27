@@ -80,7 +80,7 @@ class DB {
                 UPDATE: db.prepare(`UPDATE ${TABLE} SET udate = @bool WHERE package = @package`),
                 INCREMENT: db.prepare(`UPDATE ${TABLE} SET udate = udate + 1 WHERE package = @package`),
                 DECREMENT: db.prepare(`UPDATE ${TABLE} SET udate = 0 WHERE udate = 1`),
-                FIXFLAG: db.prepare(`UPDATE ${TABLE} SET udate = 1 WHERE udate > 1 AND udate < 7`),
+                FIXFLAG: db.prepare(`UPDATE ${TABLE} SET udate = 1 WHERE udate > 1 AND udate < 7; UPDATE ${TABLE} SET udate = 7 WHERE udate > 7`),
                 GETPACKAGESBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND udate > 0 ORDER BY package ASC;`),
                 GETPACKAGECOUNTBYMAINTAINER: db.prepare(`SELECT COUNT(package) as count FROM ${TABLE} WHERE maintainer = @maintainer AND udate > 0;`)
             }
