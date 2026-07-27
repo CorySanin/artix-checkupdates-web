@@ -21,7 +21,13 @@
             <% packages && packages.forEach(p => { %>
             <tr>
                 <td><a href="<%= p.url %>"><%= p.package %></a></td>
-                <td><% if (p.upstream) { %><a href="<%= p.upstream %>">Upstream repo</a><% } else { echo('N/A'); } %></td>
+                <td><% if (p.upstream) {
+                    %><a href="<%= p.upstream %>">Upstream repo</a><%
+                }
+                else if (p.action === 'Update' && p.service){
+                    %><a href="https://github.com/CorySanin/artix-checkupdates-web#init-script-package-appstream-data">Missing Appstream</a><%
+                }
+                else { echo('N/A'); } %></td>
                 <td><%= p.action %></td>
             </tr>
             <% }); %>

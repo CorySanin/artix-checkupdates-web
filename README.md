@@ -69,7 +69,7 @@ The primary method for checking for updates is with [artix-checkupdates](https:/
 
 It is imperative that non-Arch packages have a `.nvchecker.toml` file committed. Without it, there is no way to track which packages need updates!
 
-Once a day, checkupdates web clones all Artix-only packages (as obtained by `artix-checkupdates -a`). If the repo has an nvchecker configuration file, nvchecker will determine if there's a pending update. If the package happens to be an init script package, checkupdates web will check for the existence of an appstream metadata file.
+**Once a day**, checkupdates web clones all Artix-only packages (as obtained by `artix-checkupdates -a`). If the repo has an nvchecker configuration file, nvchecker will determine if there's a pending update. If the package happens to be an init script package, checkupdates web will check for the existence of an appstream metadata file.
 
 ### Init Script Package Appstream Data
 
@@ -93,3 +93,7 @@ To satisfy checkupdates web, an init script package needs to have a file called 
 In the above example, the appstream file would be called `org.artixlinux.services.openrc.lirc.metainfo.xml`. The `metadata_license` is the license of this one xml file. `project_license` is the license of the **init script**.
 
 The PKGBUILD should install this file to `/usr/share/metainfo/`.
+
+### But it *Does* Have Appstream Data!
+
+Perhaps the package is being flagged by nvchecker instead. It's unlikely for an init script to also have an nvchecker configuration file so checkupdates web assumes it's flagged due to appstream.

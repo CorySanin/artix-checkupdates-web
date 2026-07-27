@@ -3,6 +3,7 @@ import { DB } from './db.mjs';
 import { packageUrl } from './web.mjs';
 import { spawn } from 'spawn-but-with-promises';
 import { tmpdir } from 'node:os';
+import { inits } from './inits.mjs';
 import ky from 'ky';
 import delay from 'delay';
 import * as path from 'path';
@@ -58,6 +59,15 @@ async function nvcheck(pack: CheckupdatesResult) {
     if ((await spawn('git', ['clone', '--depth=1', `${packageUrl(pack.basename)}.git`, gitdir])) !== 0) {
         console.log(`${pack.basename} | failed to clone`);
         return false;
+    }
+    const init = inits.find(init => pack.basename.endsWith(`-${init}`));
+    if (init) {
+        console.log(`${pack.basename} | likely ${init} script`);
+        const files = await fsp.readdir(gitdir, {recursive: false, withFileTypes: true});
+        if(files.every(f => f.isDirectory() || (!f.name.startsWith(`org.artixlinux.services.${init}.`) && !f.name.endsWith('.metainfo.xml')))) {
+            console.log(`${pack.basename} | missing appstream data`);
+            return true;
+        }
     }
     const nvcheckerproc = spawn('nvchecker', ['--logger', 'json', '-c', path.join(gitdir, '.nvchecker.toml')]);
     let outputstr = '';
