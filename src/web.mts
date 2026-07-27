@@ -255,7 +255,7 @@ export class Web {
             const maintainer = req.params.maintainer;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
             const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
-                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false));
+                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false).sort((a, b) => (a.service? 1 : 0) - (b.service? 1 : 0)));
             if (packagesOwned > 0) {
                 if (req.useragent?.browser === 'curl') {
                     res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages)}`);
