@@ -58,3 +58,38 @@ ARCH_MIRROR=https://example.com/%s/os/x86_64
 ARTIX_REPOS=system-goblins,world-goblins,galaxy-goblins,lib32-goblins,system-gremlins,world-gremlins,galaxy-gremlins,lib32-gremlins,system,world,galaxy,lib32
 ARCH_REPOS=core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib
 ```
+
+# Checking for updates
+
+## Packages from Arch
+
+The primary method for checking for updates is with [artix-checkupdates](https://gitea.artixlinux.org/artix/artix-checkupdates). This compares Artix's version to Arch's. This check is performed every 10 minutes.
+
+## Artix-Only Packages
+
+It is imperative that non-Arch packages have a `.nvchecker.toml` file committed. Without it, there is no way to track which packages need updates!
+
+Once a day, checkupdates web clones all Artix-only packages (as obtained by `artix-checkupdates -a`). If the repo has an nvchecker configuration file, nvchecker will determine if there's a pending update. If the package happens to be an init script package, checkupdates web will check for the existence of an appstream metadata file.
+
+### Init Script Package Appstream Data
+
+To satisfy checkupdates web, an init script package needs to have a file called `org.artixlinux.services.{int system}.*.metainfo.xml` in the root of its repo. Consider this example:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="service">
+    <id>org.artixlinux.services.openrc.lirc</id>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-2.0</project_license>
+    <name>lirc-openrc</name>
+    <summary>openrc init script for lirc</summary>
+    <categories>
+        <category>System</category>
+        <category>InitScript</category>
+    </categories>
+</component>
+```
+
+In the above example, the appstream file would be called `org.artixlinux.services.openrc.lirc.metainfo.xml`. The `metadata_license` is the license of this one xml file. `project_license` is the license of the **init script**.
+
+The PKGBUILD should install this file to `/usr/share/metainfo/`.
