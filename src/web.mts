@@ -6,11 +6,13 @@ import * as useragent from 'express-useragent';
 import prom from 'prom-client';
 import sharp from 'sharp';
 import * as path from 'path';
+import { inits } from './inits.mjs';
 import { ORPHAN, type SaveData } from './daemon.mjs';
 import type http from "http";
 import type { Request, Response } from "express";
 import type { Config } from './config.js';
 import type { PackageDBEntry } from './db.mjs';
+import type { LevelMetadata, Gravity } from 'sharp';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
 const VIEWOPTIONS = {
@@ -23,6 +25,7 @@ type WebPackageObject = {
     package: string;
     action: Action;
     url: string;
+    service: boolean;
 }
 
 type ParseablePackage = string | PackageDBEntry;
@@ -46,16 +49,18 @@ function upstreamUrl(p: ParseablePackage) {
 function prepPackages(arr: ParseablePackage[], action: Action, upstream: boolean = true): WebPackageObject[] {
     return arr.map(m => {
         const hasUpstream = upstream || (typeof m === 'object' && m.udate < 4);
+        const pkgbase = parsePackage(m)
         return {
-            package: parsePackage(m),
+            package: pkgbase,
             action,
             url: packageUrl(m),
-            upstream: hasUpstream ? upstreamUrl(m) : null
+            upstream: hasUpstream ? upstreamUrl(m) : null,
+            service: !hasUpstream && inits.some(init => pkgbase.endsWith(`-${init}`))
         }
     });
 }
 
-async function createOutlinedText(string: string, meta: sharp.Metadata, gravity: sharp.Gravity = 'west') {
+async function createOutlinedText(string: string, meta: LevelMetadata, gravity: Gravity = 'west') {
     const txt = sharp({
         create: {
             width: meta.width || 0,
@@ -289,7 +294,7 @@ export class Web {
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
             if (packagesOwned > 0) {
                 const img = sharp(path.join(PROJECT_ROOT, 'userbar', 'userbar.png'));
-                const meta: sharp.Metadata = await img.metadata();
+                const meta: LevelMetadata = await img.metadata();
 
                 const layers = [
                     {
