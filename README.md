@@ -89,7 +89,7 @@ To satisfy checkupdates web, an init script package needs to have a file called 
     <launchable type="service">lircmd</launchable>
     <categories>
         <category>System</category>
-        <category>InitScript</category>
+        <category>ConsoleOnly</category>
     </categories>
     <url type="homepage">https://artixlinux.org/</url>
 </component>
