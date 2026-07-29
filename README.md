@@ -83,10 +83,15 @@ To satisfy checkupdates web, an init script package needs to have a file called 
     <project_license>GPL-2.0</project_license>
     <name>lirc-openrc</name>
     <summary>openrc init script for lirc</summary>
+    <!-- put primary service first -->
+    <launchable type="service">lircd</launchable>
+    <launchable type="service">irexec</launchable>
+    <launchable type="service">lircmd</launchable>
     <categories>
         <category>System</category>
         <category>InitScript</category>
     </categories>
+    <url type="homepage">https://artixlinux.org/</url>
 </component>
 ```
 
