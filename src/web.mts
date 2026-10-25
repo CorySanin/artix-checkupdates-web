@@ -40,7 +40,9 @@ export function packageUrl(p: ParseablePackage) {
 }
 
 function upstreamUrl(p: ParseablePackage) {
-    return `https://gitlab.archlinux.org/archlinux/packaging/packages/${parsePackage(p)}/-/commits/main?ref_type=HEADS`
+    const pkg = parsePackage(p)
+    // return `https://gitlab.archlinux.org/archlinux/packaging/packages/${pkg}/-/commits/main?ref_type=HEADS`;
+    return `https://git.arch.sanin.dev/packages/${pkg}/log/main`;
 }
 
 function prepPackages(arr: ParseablePackage[], action: Action, upstream: boolean = true): WebPackageObject[] {
