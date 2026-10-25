@@ -15,9 +15,6 @@ import type { PackageDBEntry } from './db.mjs';
 import type { LevelMetadata, Gravity } from 'sharp';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
-const VIEWOPTIONS = {
-    outputFunctionName: 'echo'
-};
 
 type Action = "Move" | "Update";
 
@@ -142,7 +139,6 @@ export class Web {
 
         app.set('trust proxy', 1);
         app.set('view engine', 'ejs');
-        app.set('view options', VIEWOPTIONS);
 
         app.use(useragent.express());
 
