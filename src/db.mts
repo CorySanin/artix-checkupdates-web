@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
-
-const TABLE = 'packages';
+import { TABLE, migrate } from './db-migrations.js';
 
 type Category = 'move' | 'udate';
 
@@ -43,17 +42,12 @@ interface CountResult {
 }
 
 class DB {
-    private _db: Database.Database;
     private _queries: DatabaseOperations;
 
     constructor(file: string | Buffer) {
-        this._db = new Database(file);
-        const db = this._db;
-        db.pragma('journal_mode = WAL');
+        const db = new Database(file);
 
-        if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${TABLE}';`).get()) {
-            db.prepare(`CREATE TABLE ${TABLE} (package VARCHAR(128) PRIMARY KEY, maintainer VARCHAR(128), move INTEGER, udate INTEGER, lastseen DATETIME);`).run();
-        }
+        migrate(db);
 
         this._queries = {
             GETPACKAGE: db.prepare(`SELECT * FROM ${TABLE} WHERE package = @package;`),
