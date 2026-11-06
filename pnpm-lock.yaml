@@ -229,9 +229,6 @@ importers:
       '@types/express':
         specifier: 5.0.6
         version: 5.0.6
-      '@types/express-useragent':
-        specifier: 1.0.5
-        version: 1.0.5
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
@@ -523,9 +520,6 @@ packages:
 
   '@types/express-serve-static-core@5.1.1':
     resolution: {integrity: sha512-v4zIMr/cX7/d2BpAEX3KNKL/JrT1s43s96lLvvdTmza1oEvDudCqK9aF/djc/SWgy8Yh0h30TZx5VpzqFCxk5A==}
-
-  '@types/express-useragent@1.0.5':
-    resolution: {integrity: sha512-G1zPW6jDj7oGJvMvB8UCIAWznCOafcksYzOg8LINfYmvrXlSGJ6nsJ7O7GlmYMjrgGYvobYaI8IhRCkAKslPJA==}
 
   '@types/express@5.0.6':
     resolution: {integrity: sha512-sKYVuV7Sv9fbPIt/442koC7+IIwK5olP1KWeD88e/idgoJqDm3JV/YUiPwkoKK92ylff2MGxSz1CSjsXelx0YA==}
@@ -1476,10 +1470,6 @@ snapshots:
       '@types/qs': 6.15.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
-
-  '@types/express-useragent@1.0.5':
-    dependencies:
-      '@types/express': 5.0.6
 
   '@types/express@5.0.6':
     dependencies:
