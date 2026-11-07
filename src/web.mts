@@ -46,8 +46,8 @@ function upstreamUrl(p: ParseablePackage) {
 }
 
 function prepPackages(arr: ParseablePackage[], action: Action, upstream: boolean = true): WebPackageObject[] {
-    return arr.map(m => {
-        const hasUpstream = upstream || (typeof m === 'object' && m.udate < 4);
+    return arr?.map(m => {
+        const hasUpstream = upstream || (typeof m === 'object' && (m.udate < 4 || m.artixonly === 0))
         const pkgbase = parsePackage(m)
         return {
             package: pkgbase,
@@ -56,7 +56,7 @@ function prepPackages(arr: ParseablePackage[], action: Action, upstream: boolean
             upstream: hasUpstream ? upstreamUrl(m) : null,
             service: !hasUpstream && inits.some(init => pkgbase.endsWith(`-${init}`))
         }
-    });
+    }) ?? [];
 }
 
 async function createOutlinedText(string: string, meta: LevelMetadata, gravity: Gravity = 'west') {
@@ -136,6 +136,7 @@ export class Web {
             'last-nvcheck': null,
             move: [],
             update: [],
+            aomove: [],
             aoupdate: []
         };
 
@@ -188,6 +189,7 @@ export class Web {
 
         app.get('/', async (req, res) => {
             const packages = prepPackages(saveData.move, 'Move')
+                .concat(prepPackages(saveData.aomove, 'Move', false))
                 .concat(prepPackages(saveData.update, 'Update'))
                 .concat(prepPackages(saveData.aoupdate, 'Update', false));
             if (req.useragent?.browser === 'curl') {
@@ -387,11 +389,11 @@ export class Web {
                 this.set({
                     maintainer: 'any',
                     action: 'move'
-                }, saveData.move.length);
+                }, saveData.move.length + saveData.aomove.length);
                 this.set({
                     maintainer: 'any',
                     action: 'update'
-                }, saveData.update.length);
+                }, saveData.update.length + saveData.aoupdate.length);
             }
         });
 

@@ -32,6 +32,13 @@ export type SaveData = {
     'last-nvcheck': string | null;
     move: string[];
     update: string[];
+    /**
+     * artix-only movable packages
+     */
+    aomove: string[];
+    /**
+     * artix-only upgradable packages
+     */
     aoupdate: string[];
 }
 
@@ -49,24 +56,29 @@ interface NvLog {
     revision?: string;
 }
 
+interface nvCheckResult {
+    newVersion: boolean;
+    hasNvCheck: boolean | null;
+}
+
 function notStupidParseInt(v: string | undefined): number {
     return v === undefined ? NaN : parseInt(v);
 }
 
-async function nvcheck(pack: CheckupdatesResult) {
+async function nvcheck(pack: CheckupdatesResult): Promise<nvCheckResult> {
     const curVer = pack.artixVersion.substring(Math.max(0, pack.artixVersion.indexOf(':')), pack.artixVersion.lastIndexOf('-'));
     const gitdir = await fsp.mkdtemp(path.join(tmpdir(), 'git_'));
     if ((await spawn('git', ['clone', '--depth=1', `${packageUrl(pack.basename)}.git`, gitdir])) !== 0) {
         console.log(`${pack.basename} | failed to clone`);
-        return false;
+        return { newVersion: false, hasNvCheck: false };
     }
     const init = inits.find(init => pack.basename.endsWith(`-${init}`));
     if (init) {
         console.log(`${pack.basename} | likely ${init} script`);
-        const files = await fsp.readdir(gitdir, {recursive: false, withFileTypes: true});
-        if(files.every(f => f.isDirectory() || (!f.name.startsWith(`org.artixlinux.services.${init}.`) && !f.name.endsWith('.metainfo.xml')))) {
+        const files = await fsp.readdir(gitdir, { recursive: false, withFileTypes: true });
+        if (files.every(f => f.isDirectory() || (!f.name.startsWith(`org.artixlinux.services.${init}.`) && !f.name.endsWith('.metainfo.xml')))) {
             console.log(`${pack.basename} | missing appstream data`);
-            return true;
+            return { newVersion: true, hasNvCheck: null };
         }
     }
     const nvcheckerproc = spawn('nvchecker', ['--logger', 'json', '-c', path.join(gitdir, '.nvchecker.toml')]);
@@ -77,13 +89,13 @@ async function nvcheck(pack: CheckupdatesResult) {
     const exitCode = await nvcheckerproc;
     fsp.rm(gitdir, { recursive: true, force: true });
     if (exitCode !== 0) {
-        return false;
+        return { newVersion: false, hasNvCheck: false };
     }
     console.log(`${pack.basename} | .nvchecker.toml found`);
     const nvLogs = outputstr.trim().split('\n').map(line => JSON.parse(line) as NvLog).filter(nvl => nvl.level === 'info');
     const latest = nvLogs.length && nvLogs[0]?.version;
     console.log(`${pack.basename} | current: '${curVer}' latest: '${latest || '-'}'`);
-    return !!(latest && latest !== curVer);
+    return { newVersion: !!(latest && latest !== curVer), hasNvCheck: true };
 }
 
 export class Daemon {
@@ -109,6 +121,7 @@ export class Daemon {
             'last-nvcheck': null,
             move: [],
             update: [],
+            aomove: [],
             aoupdate: [],
         };
 
@@ -186,11 +199,31 @@ export class Daemon {
         console.log(`Package sync complete`);
     }
 
+    sortMovable = (pkgbases: string[]) => {
+        const result: { move: string[], aomove: string[] } = {
+            move: [],
+            aomove: []
+        };
+        pkgbases.forEach(pkgbase => {
+            const pkg = this._db.getPackage(pkgbase);
+            result[pkg.artixonly > 0 ? 'aomove' : 'move'].push(pkgbase);
+        });
+        return result;
+    }
+
     checkupdates = async (config: Config) => {
         const check = new Checkupdates();
         try {
-            await this.handleUpdates(config, this._saveData.move = (await check.fetchMovable(true, 3)).map(p => p.basename), 'move');
-            await this.handleUpdates(config, this._saveData.update = (await check.fetchUpgradable(true, 3)).map(p => p.basename), 'udate');
+            const movable = (await check.fetchMovable(true, 3)).map(p => p.basename);
+            await this.handleUpdates(config, movable, 'move');
+            const movableTriaged = this.sortMovable(movable);
+            this._saveData.move = movableTriaged.move;
+            this._saveData.aomove = movableTriaged.aomove;
+            const upgradable = (await check.fetchUpgradable(true, 3)).map(p => p.basename);
+            upgradable.forEach(pkgbase => {
+                this._db.setArtixOnly(pkgbase, 0);
+            });
+            await this.handleUpdates(config, this._saveData.update = upgradable, 'udate');
         }
         catch (ex) {
             console.error('Failed to check for updates:', ex);
@@ -257,7 +290,9 @@ export class Daemon {
             for (let i = 0; i < artixOnly.length; i++) {
                 const aop = artixOnly[i]!;
                 const aobasename = aop.basename;
-                if (! await nvcheck(aop)) {
+                const nvCheckResult = await nvcheck(aop);
+                this._db.setArtixOnly(aobasename, nvCheckResult.hasNvCheck ? 2 : 1);
+                if (!nvCheckResult.newVersion) {
                     db.updateFlag(aobasename, type, 0);
                     continue;
                 }

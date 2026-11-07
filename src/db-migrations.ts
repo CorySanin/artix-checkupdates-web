@@ -5,6 +5,7 @@ export const TABLE = 'packages';
 export function migrate(db: Database) {
     const migrations: string[][] = [
         [`CREATE TABLE IF NOT EXISTS ${TABLE} (package VARCHAR(128) PRIMARY KEY, maintainer VARCHAR(128), move INTEGER, udate INTEGER, lastseen DATETIME);`],
+        [`ALTER TABLE ${TABLE} ADD COLUMN artixonly INTEGER DEFAULT 0`],
     ];
 
     db.pragma('journal_mode = WAL');

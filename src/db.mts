@@ -25,6 +25,7 @@ interface DatabaseOperations {
     PREPAREARTIXONLY: Database.Statement;
     CLEANARTIXONLY: Database.Statement;
     FIXNVCHECKERFLAGS: Database.Statement;
+    SETISARTIXONLY: Database.Statement;
     move: CommonOperations;
     udate: CommonOperations;
 }
@@ -35,6 +36,12 @@ interface PackageDBEntry {
     move: number;
     udate: number;
     lastseen: Date;
+    /**
+     * 0 = arch package
+     * 1 = artix-only
+     * 2 = artix-only with nvchecker
+     */
+    artixonly: number;
 }
 
 interface CountResult {
@@ -60,6 +67,7 @@ class DB {
             PREPAREARTIXONLY: db.prepare(`UPDATE ${TABLE} SET udate = 6 WHERE udate > 6`),
             CLEANARTIXONLY: db.prepare(`DELETE FROM ${TABLE} WHERE udate = 6`),
             FIXNVCHECKERFLAGS: db.prepare(`UPDATE ${TABLE} SET udate = 7 WHERE udate > 7`),
+            SETISARTIXONLY: db.prepare(`UPDATE ${TABLE} set artixonly = @bool WHERE package = @package`),
             move: {
                 GET: db.prepare(`SELECT * FROM ${TABLE} WHERE move = @bool;`),
                 GETNEWBYMAINTAINER: db.prepare(`SELECT * FROM ${TABLE} WHERE maintainer = @maintainer AND (move = 4 OR move = 8);`),
@@ -126,6 +134,14 @@ class DB {
 
     updateFlag(pack: string, type: Category, bool: number): boolean {
         this._queries[type].UPDATE.run({
+            package: pack,
+            bool
+        });
+        return true;
+    }
+
+    setArtixOnly(pack: string, bool: number): boolean {
+        this._queries.SETISARTIXONLY.run({
             package: pack,
             bool
         });

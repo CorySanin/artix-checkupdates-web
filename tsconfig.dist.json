@@ -4,7 +4,8 @@
 		"sourceMap": true,
 		"inlineSources": true,
 		"rootDir": "./src",
-		"outDir": "./distribution"
+		"outDir": "./distribution",
+		"strictNullChecks": true,
 	},
 	"include": [
 		"src"

@@ -1,6 +1,6 @@
 {
   "name": "artix-checkupdates-web",
-  "version": "4.4.1",
+  "version": "4.5.0",
   "description": "Determine packages that need attention",
   "main": "./distribution/index.js",
   "type": "module",
@@ -49,7 +49,7 @@
     "@sindresorhus/tsconfig": "9.0.0",
     "@types/better-sqlite3": "9.6.0",
     "@types/express": "5.0.6",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "forking-build-shit": "1.1.9",
     "node-gyp": "^13.1.0",
     "typescript": "7.0.2"
