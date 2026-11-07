@@ -47,8 +47,8 @@ function upstreamUrl(p: ParseablePackage) {
 
 function prepPackages(arr: ParseablePackage[], action: Action, upstream: boolean = true): WebPackageObject[] {
     return arr?.map(m => {
-        const hasUpstream = upstream || (typeof m === 'object' && (m.udate < 4 || m.artixonly === 0))
-        const pkgbase = parsePackage(m)
+        const hasUpstream = upstream || (typeof m === 'object' && ((action === 'Update' && m.udate < 4) || m.artixonly === 0))
+        const pkgbase = parsePackage(m);
         return {
             package: pkgbase,
             action,
@@ -221,7 +221,7 @@ export class Web {
         app.get('/maintainer/orphan', async (req, res) => {
             const maintainer = ORPHAN.name;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
-            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
+            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move', false)
                 .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false));
             if (req.useragent?.browser === 'curl') {
                 res.send(`orphaned pending actions\n\n${renderForCurl(packages)}`);
@@ -254,7 +254,7 @@ export class Web {
         app.get('/maintainer/:maintainer', async (req, res) => {
             const maintainer = req.params.maintainer;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
-            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move')
+            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move', false)
                 .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false).sort((a, b) => (a.service? 1 : 0) - (b.service? 1 : 0)));
             if (packagesOwned > 0) {
                 if (req.useragent?.browser === 'curl') {
