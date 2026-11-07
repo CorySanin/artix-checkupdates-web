@@ -115,7 +115,7 @@ export class Daemon {
         this._savePath = process.env['SAVEPATH'] || config.savePath || path.join(PROJECT_ROOT, 'config', 'data.json');
         console.log('Written by Cory Sanin for Artix Linux');
         this._locked = false;
-        const db = this._db = new DB(process.env['DBPATH'] || config.db || path.join(PROJECT_ROOT, 'config', 'packages.db'));
+        const db = this._db = new DB(process.env['DBPATH'] || config.db || path.join(PROJECT_ROOT, 'config', 'packages.db'), true);
         this._saveData = {
             'last-sync': null,
             'last-nvcheck': null,
@@ -206,7 +206,7 @@ export class Daemon {
         };
         pkgbases.forEach(pkgbase => {
             const pkg = this._db.getPackage(pkgbase);
-            result[pkg.artixonly > 0 ? 'aomove' : 'move'].push(pkgbase);
+            result[(pkg?.artixonly ?? 0) > 0 ? 'aomove' : 'move'].push(pkgbase);
         });
         return result;
     }

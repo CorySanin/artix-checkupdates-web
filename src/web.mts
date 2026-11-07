@@ -389,11 +389,11 @@ export class Web {
                 this.set({
                     maintainer: 'any',
                     action: 'move'
-                }, saveData.move.length + saveData.aomove.length);
+                }, saveData.move.length + (saveData.aomove || []).length);
                 this.set({
                     maintainer: 'any',
                     action: 'update'
-                }, saveData.update.length + saveData.aoupdate.length);
+                }, saveData.update.length + (saveData.aoupdate || []).length);
             }
         });
 

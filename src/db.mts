@@ -51,10 +51,10 @@ interface CountResult {
 class DB {
     private _queries: DatabaseOperations;
 
-    constructor(file: string | Buffer) {
+    constructor(file: string | Buffer, performMigrations: boolean = false) {
         const db = new Database(file);
-
-        migrate(db);
+        db.pragma('journal_mode = WAL');
+        performMigrations && migrate(db);
 
         this._queries = {
             GETPACKAGE: db.prepare(`SELECT * FROM ${TABLE} WHERE package = @package;`),

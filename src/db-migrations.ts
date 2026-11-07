@@ -8,7 +8,6 @@ export function migrate(db: Database) {
         [`ALTER TABLE ${TABLE} ADD COLUMN artixonly INTEGER DEFAULT 0`],
     ];
 
-    db.pragma('journal_mode = WAL');
     const version = (db.pragma('user_version') as { 'user_version': number }[])[0]?.user_version ?? 0;
     const migrationsTodo = migrations.slice(version);
     const runMigration = db.transaction((migrations: string[]) => {
