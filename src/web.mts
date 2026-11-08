@@ -192,6 +192,13 @@ export class Web {
                 .concat(prepPackages(saveData.aomove, 'Move', false))
                 .concat(prepPackages(saveData.update, 'Update'))
                 .concat(prepPackages(saveData.aoupdate, 'Update', false));
+            const acceptHeader = req.headers.accept;
+            if (acceptHeader && acceptHeader.includes('application/json')) {
+                res.json({
+                    packages
+                });
+                return;
+            }
             if (req.useragent?.browser === 'curl') {
                 res.send(renderForCurl(packages));
                 return;
@@ -227,6 +234,13 @@ export class Web {
                 res.send(`orphaned pending actions\n\n${renderForCurl(packages)}`);
                 return;
             }
+            const acceptHeader = req.headers.accept;
+            if (acceptHeader && acceptHeader.includes('application/json')) {
+                res.json({
+                    packages
+                });
+                return;
+            }
             res.render('maintainer',
                 {
                     inliner,
@@ -254,8 +268,18 @@ export class Web {
         app.get('/maintainer/:maintainer', async (req, res) => {
             const maintainer = req.params.maintainer;
             const packagesOwned = db.getMaintainerPackageCount(maintainer);
-            const packages = prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move', false)
-                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false).sort((a, b) => (a.service? 1 : 0) - (b.service? 1 : 0)));
+            const packages = packagesOwned <= 0 ? [] : prepPackages(db.getPackagesByMaintainer(maintainer, 'move'), 'Move', false)
+                .concat(prepPackages(db.getPackagesByMaintainer(maintainer, 'udate'), 'Update', false).sort((a, b) => (a.service ? 1 : 0) - (b.service ? 1 : 0)));
+            const acceptHeader = req.headers.accept;
+            if (acceptHeader && acceptHeader.includes('application/json')) {
+                if (packagesOwned <= 0) {
+                    res.status(404);
+                }
+                res.json({
+                    packages
+                });
+                return;
+            }
             if (packagesOwned > 0) {
                 if (req.useragent?.browser === 'curl') {
                     res.send(`${maintainer}'s pending actions\n\n${renderForCurl(packages)}`);
