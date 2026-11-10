@@ -1,4 +1,5 @@
-import { Checkupdates, type CheckupdatesResult } from 'artix-checkupdates';
+import { Checkupdates } from 'artix-checkupdates';
+import type { ArchRepo, ArtixRepo, CheckupdatesResult } from 'artix-checkupdates';
 import { DB } from './db.mjs';
 import { packageUrl } from './web.mjs';
 import { spawn } from 'spawn-but-with-promises';
@@ -61,25 +62,59 @@ interface nvCheckResult {
     hasNvCheck: boolean | null;
 }
 
+interface ArchwebPackageFilesJson {
+    pkgname: string;
+    repo: ArtixRepo | ArchRepo;
+    arch: string;
+    pkg_last_update: string;
+    files_last_update: string;
+    files_count: number;
+    dir_count: number;
+    files: string[];
+}
+
 function notStupidParseInt(v: string | undefined): number {
     return v === undefined ? NaN : parseInt(v);
+}
+
+/**
+ * Check if an init package has its required appstream data
+ * @param pack checkupdates result
+ * @returns true if the package passes the check, false otherwise
+ */
+async function appstreamcheck(pack: CheckupdatesResult): Promise<boolean> {
+    // gets the stable repo
+    const repo = pack.artixRepo.substring(0, pack.artixRepo.indexOf('-')) || pack.artixRepo;
+    const preferredArch = 'any';
+    const arches = [preferredArch, 'x86_64'];
+    for (let i = 0; i < arches.length; i++) {
+        const arch = arches[i];
+        const uri = `https://packages.artixlinux.org/packages/${repo}/${arch}/${pack.basename}/files/json`;
+        try {
+            const response = await ky.get(uri).json<ArchwebPackageFilesJson>();
+            if (arch !== preferredArch) {
+                console.log(`${pack.basename} | init script has ${arch} arch? This check may get removed in the future. Please use ${preferredArch}.`);
+            }
+            return (response.files || []).some(f => f.startsWith('usr/share/metainfo/org.artixlinux.services.') && f.endsWith('.metainfo.xml'));
+        }
+        catch (ex) {
+            console.error(`Failed to GET ${uri} =>`, ex);
+        }
+    }
+    return false;
 }
 
 async function nvcheck(pack: CheckupdatesResult): Promise<nvCheckResult> {
     const curVer = pack.artixVersion.substring(Math.max(0, pack.artixVersion.indexOf(':')), pack.artixVersion.lastIndexOf('-'));
     const gitdir = await fsp.mkdtemp(path.join(tmpdir(), 'git_'));
+    const init = inits.find(init => pack.basename.endsWith(`-${init}`));
+    if (init && !(await appstreamcheck(pack))) {
+        console.log(`${pack.basename} | missing appstream data`);
+        return { newVersion: true, hasNvCheck: null };
+    }
     if ((await spawn('git', ['clone', '--depth=1', `${packageUrl(pack.basename)}.git`, gitdir])) !== 0) {
         console.error(`${pack.basename} | failed to clone`);
         return { newVersion: false, hasNvCheck: false };
-    }
-    const init = inits.find(init => pack.basename.endsWith(`-${init}`));
-    if (init) {
-        console.log(`${pack.basename} | likely ${init} script`);
-        const files = await fsp.readdir(gitdir, { recursive: false, withFileTypes: true });
-        if (files.every(f => f.isDirectory() || (!f.name.startsWith(`org.artixlinux.services.${init}.`) && !f.name.endsWith('.metainfo.xml')))) {
-            console.log(`${pack.basename} | missing appstream data`);
-            return { newVersion: true, hasNvCheck: null };
-        }
     }
     const nvcheckerproc = spawn('nvchecker', ['--logger', 'json', '-c', path.join(gitdir, '.nvchecker.toml')]);
     let outputstr = '';
