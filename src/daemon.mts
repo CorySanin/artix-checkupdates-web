@@ -93,7 +93,7 @@ async function appstreamcheck(pack: CheckupdatesResult): Promise<boolean> {
         try {
             const response = await ky.get(uri).json<ArchwebPackageFilesJson>();
             if (arch !== preferredArch) {
-                console.log(`${pack.basename} | init script has ${arch} arch? This check may get removed in the future. Please use ${preferredArch}.`);
+                console.log(`${pack.basename} | init script has "${arch}" arch? This check may get removed in the future. Please use "${preferredArch}".`);
             }
             return (response.files || []).some(f => f.startsWith('usr/share/metainfo/org.artixlinux.services.') && f.endsWith('.metainfo.xml'));
         }

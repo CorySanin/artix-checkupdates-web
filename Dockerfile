@@ -24,7 +24,7 @@ FROM baseimg AS deploy
 
 VOLUME /usr/notifier/config
 WORKDIR /usr/notifier
-HEALTHCHECK  --timeout=15m \
+HEALTHCHECK --interval=5m --timeout=3s --start-period=2m --start-interval=5s \
   CMD curl --fail http://localhost:8081/healthcheck || exit 1
 
 EXPOSE 8080
