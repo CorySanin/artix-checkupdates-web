@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises';
 import { Checkupdates } from 'artix-checkupdates';
 import type { ArchRepo, ArtixRepo, CheckupdatesResult } from 'artix-checkupdates';
 import { DB } from './db.mjs';
@@ -218,15 +219,21 @@ export class Daemon {
             const mae = maintainers[i] as MaintainerArrayElement;
             const maintainer = typeof mae === 'object' ? mae.name : mae;
             console.log(`Syncing ${maintainer}...`);
-            try {
-                const packages = await this.getMaintainersPackages(maintainer);
-                packages.forEach(p => {
-                    db.updatePackage(p, maintainer, lastseen);
-                });
-            }
-            catch (err) {
-                console.error(`Failed to get packages for ${maintainer}`);
-                console.error(err);
+            for (let j = 0; j <= 4; j++) {
+                try {
+                    const packages = await this.getMaintainersPackages(maintainer);
+                    packages.forEach(p => {
+                        db.updatePackage(p, maintainer, lastseen);
+                    });
+                    break;
+                }
+                catch (err) {
+                    console.error(err);
+                    if (j < 4) {
+                        console.error('waiting 30 seconds before retry...');
+                        await setTimeout(30000);
+                    }
+                }
             }
         }
         console.log(`removing unused packages...`);
@@ -268,13 +275,17 @@ export class Daemon {
     getMaintainersPackages = async (maintainer: string): Promise<string[]> => {
         const process = spawn('artixpkg', ['admin', 'query', '-m', maintainer], { timeout: TIMEOUT, rejectOnNonZero: true });
         const packagelist: string[] = [];
+        let errorStr: null | string = null;
         process.stdout.on('data', (data: Stream) => {
             packagelist.push(...data.toString().trim().split('\n'));
         });
         process.stderr.on('data', (err: Stream) => {
-            console.error(err.toString());
+            console.error(errorStr = err.toString());
         });
         await process;
+        if (errorStr && process.exitCode !== 0) {
+            throw new Error(`Fetching packages for ${maintainer} failed: ${errorStr}`);
+        }
         return packagelist;
     }
 
