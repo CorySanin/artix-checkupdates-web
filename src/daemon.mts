@@ -6,6 +6,7 @@ import { packageUrl } from './web.mjs';
 import { spawn } from 'spawn-but-with-promises';
 import { tmpdir } from 'node:os';
 import { inits } from './inits.mjs';
+import { initGitea, type Gitea } from './gitea.js';
 import ky from 'ky';
 import delay from 'delay';
 import * as path from 'path';
@@ -17,9 +18,7 @@ import type http from "http";
 import type { Express } from "express";
 import type { Config, MaintainerArrayElement } from './config.js';
 import type { Category, PackageDBEntry } from './db.mjs';
-import type Stream from 'node:stream';
 
-const TIMEOUT = 180000;
 export const ORPHAN = {
     "name": "orphan",
     "ircName": "orphaned"
@@ -140,8 +139,10 @@ export class Daemon {
     private _locked: boolean;
     private _saveData: SaveData;
     private _db: DB;
-    private _cronjob: cron.ScheduledTask;
+    private _cronSchedule: string;
+    private _cronjob: cron.ScheduledTask | null = null;
     private _webserver: http.Server;
+    private _gitea: Gitea | null = null;
 
     constructor(config: Config) {
         const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
@@ -172,11 +173,17 @@ export class Daemon {
         // resetting flags in case of improper shutdown
         db.restoreFlags();
 
-        this._cronjob = cron.schedule(process.env['CRON'] || config.cron || '*/30 * * * *', () => {
-            this.main(this._config);
-        });
+        this._cronSchedule = process.env['CRON'] || config.cron || '*/30 * * * *';
 
         this._webserver = app.listen(port);
+        this.start();
+    }
+
+    start = async () => {
+        this._gitea = await initGitea();
+        this._cronjob = cron.schedule(this._cronSchedule, () => {
+            this.main(this._config);
+        });
     }
 
     main = async (config: Config) => {
@@ -272,21 +279,41 @@ export class Daemon {
         }
     }
 
-    getMaintainersPackages = async (maintainer: string): Promise<string[]> => {
-        const process = spawn('artixpkg', ['admin', 'query', '-m', maintainer], { timeout: TIMEOUT, rejectOnNonZero: true });
-        const packagelist: string[] = [];
-        let errorStr: null | string = null;
-        process.stdout.on('data', (data: Stream) => {
-            packagelist.push(...data.toString().trim().split('\n'));
-        });
-        process.stderr.on('data', (err: Stream) => {
-            console.error(errorStr = err.toString());
-        });
-        await process;
-        if (errorStr && process.exitCode !== 0) {
-            throw new Error(`Fetching packages for ${maintainer} failed: ${errorStr}`);
+    topicSearch = async (topic: string, retries: number = 3) => {
+        const gitea = this._gitea;
+        if (!gitea) {
+            return [] as string[];
         }
-        return packagelist;
+        for (let i = 1; i <= retries; i++) {
+            try {
+                const response = await gitea.rest.repository.repoSearch({
+                    q: topic,
+                    topic: true,
+                    limit: 100000,
+                    archived: false,
+                    includeDesc: false,
+                    template: false,
+                    private: false,
+                    is_private: false,
+                });
+                if (response.status !== 200) {
+                    continue;
+                }
+                return (response.data.data ?? []).map(result => result.name).filter(result => typeof result === 'string');
+            }
+            catch (err) {
+                console.error(err);
+                if (i < retries) {
+                    console.error('waiting 30 seconds before retry...');
+                    await setTimeout(30000);
+                }
+            }
+        }
+        return [] as string[];
+    }
+
+    getMaintainersPackages = async (maintainer: string): Promise<string[]> => {
+        return await this.topicSearch(`maintainer-${maintainer}`);
     }
 
     getAllPackages = async () => {
@@ -304,14 +331,14 @@ export class Daemon {
             if (repo === undefined) {
                 break;
             }
-            const process = spawn('artixpkg', ['admin', 'query', '-t', repo], { timeout: TIMEOUT, rejectOnNonZero: true });
-            process.stdout.on('data', (data: Stream) => {
-                data.toString().trim().split('\n').forEach(p => packageSet.add(p));
-            });
-            process.stderr.on('data', (err: Stream) => {
-                console.error(err.toString());
-            });
-            await process;
+            try {
+                const packages = await this.topicSearch(repo);
+                packages.forEach(p => packageSet.add(p));
+            }
+            catch (err) {
+                console.error(`Error getting ${repo} packages:`, err);
+            }
+
             if (fqRepos.length) {
                 await delay(5000);
             }
