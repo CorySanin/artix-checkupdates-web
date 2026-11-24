@@ -1,17 +1,17 @@
 import fs from 'fs';
 import * as fsp from 'node:fs/promises';
-import { DB } from './db.mjs';
+import { DB } from './db.js';
 import express from 'express';
 import * as useragent from 'express-useragent';
 import prom from 'prom-client';
 import sharp from 'sharp';
 import * as path from 'path';
-import { inits } from './inits.mjs';
-import { ORPHAN, type SaveData } from './daemon.mjs';
+import { inits } from './inits.js';
+import { ORPHAN, type SaveData } from './daemon.js';
 import type http from "http";
 import type { Request, Response } from "express";
 import type { Config } from './config.js';
-import type { PackageDBEntry } from './db.mjs';
+import type { PackageDBEntry } from './db.js';
 import type { LevelMetadata, Gravity } from 'sharp';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');

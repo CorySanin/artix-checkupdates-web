@@ -1,11 +1,11 @@
 import { setTimeout } from 'node:timers/promises';
 import { Checkupdates } from 'artix-checkupdates';
 import type { ArchRepo, ArtixRepo, CheckupdatesResult } from 'artix-checkupdates';
-import { DB } from './db.mjs';
-import { packageUrl } from './web.mjs';
+import { DB } from './db.js';
+import { packageUrl } from './web.js';
 import { spawn } from 'spawn-but-with-promises';
 import { tmpdir } from 'node:os';
-import { inits } from './inits.mjs';
+import { inits } from './inits.js';
 import { initGitea, type Gitea } from './gitea.js';
 import ky from 'ky';
 import delay from 'delay';
@@ -17,7 +17,7 @@ import express from 'express';
 import type http from "http";
 import type { Express } from "express";
 import type { Config, MaintainerArrayElement } from './config.js';
-import type { Category, PackageDBEntry } from './db.mjs';
+import type { Category, PackageDBEntry } from './db.js';
 
 export const ORPHAN = {
     "name": "orphan",

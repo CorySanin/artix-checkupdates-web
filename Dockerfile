@@ -46,4 +46,4 @@ ENV ARCH_MIRROR="https://mirror.sanin.dev/arch-linux/%s/os/x86_64/"
 ENV ARTIX_REPOS="system-goblins,world-goblins,galaxy-goblins,lib32-goblins,system-gremlins,world-gremlins,galaxy-gremlins,lib32-gremlins,system,world,galaxy,lib32"
 ENV ARCH_REPOS="core-staging,extra-staging,multilib-staging,core-testing,extra-testing,multilib-testing,core,extra,multilib"
 
-CMD [ "node", "distribution/index.mjs"]
+CMD [ "node", "distribution/index.js"]

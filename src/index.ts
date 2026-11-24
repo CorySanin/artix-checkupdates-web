@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as fsp from 'node:fs/promises';
 import JSON5 from 'json5';
-import { IRCBot } from './ircBot.mjs';
-import { Daemon } from './daemon.mjs';
-import { Web } from './web.mjs';
+import { IRCBot } from './ircBot.js';
+import { Daemon } from './daemon.js';
+import { Web } from './web.js';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
 const data = await fsp.readFile(process.env['CONFIG'] || path.join(PROJECT_ROOT, 'config', 'config.json'));
